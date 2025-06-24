@@ -17,14 +17,14 @@ from .core.analyzer import AudioAnalyzer
 from .core.audio_loader import AudioFile, AudioLoader
 from .core.effects import ReverbProcessor
 from .core.mastering import MasteringProcessor
-from .core.optimizer import ChunkedProcessor, MemoryOptimizedProcessor, StreamingProcessor
+from .core.optimizer import MemoryOptimizedProcessor
 from .core.processor import MixProcessor
-from .plugins.base import PluginManager, PitchShiftPlugin, NoiseGatePlugin
+from .plugins.base import NoiseGatePlugin, PitchShiftPlugin, PluginManager
 from .plugins.custom_effects import (
+    HarmonicExciterPlugin,
+    StereoEnhancerPlugin,
     VintageWarmthPlugin,
     VocalEnhancerPlugin,
-    StereoEnhancerPlugin,
-    HarmonicExciterPlugin
 )
 from .video.encoder import VideoEncoder, VideoSettings
 from .video.visualizer import VisualizerComposite
@@ -58,7 +58,9 @@ console = Console()
 @click.option("--chunk-processing", is_flag=True, help="Use chunk processing for large files")
 @click.option("--streaming", is_flag=True, help="Use streaming processing (low memory usage)")
 @click.option("--preview-mode", is_flag=True, help="Process only 30 seconds for preview")
-@click.option("--plugin-dir", type=click.Path(exists=True), help="Directory containing custom plugins")
+@click.option(
+    "--plugin-dir", type=click.Path(exists=True), help="Directory containing custom plugins"
+)
 @click.option("--list-plugins", is_flag=True, help="List available plugins and exit")
 def main(
     vocal: str,
@@ -88,10 +90,10 @@ def main(
 
         console.print(f"automix version {__version__}")
         return
-    
+
     # プラグインマネージャーを初期化
     plugin_manager = PluginManager()
-    
+
     # 組み込みプラグインを登録
     plugin_manager.register_plugin(PitchShiftPlugin())
     plugin_manager.register_plugin(NoiseGatePlugin())
@@ -99,11 +101,11 @@ def main(
     plugin_manager.register_plugin(VocalEnhancerPlugin())
     plugin_manager.register_plugin(StereoEnhancerPlugin())
     plugin_manager.register_plugin(HarmonicExciterPlugin())
-    
+
     # カスタムプラグインディレクトリから読み込み
     if plugin_dir:
         plugin_manager.load_plugins_from_directory(Path(plugin_dir))
-    
+
     # プラグインリストを表示
     if list_plugins:
         table = Table(title="Available Plugins")
@@ -111,7 +113,7 @@ def main(
         table.add_column("Type", style="green")
         table.add_column("Version", style="yellow")
         table.add_column("Description", style="white")
-        
+
         for plugin_info in plugin_manager.list_plugins():
             plugin = plugin_manager.get_plugin(plugin_info["name"])
             if plugin:
@@ -120,9 +122,9 @@ def main(
                     info["name"],
                     info["type"],
                     info["version"],
-                    info.get("description", "No description")
+                    info.get("description", "No description"),
                 )
-        
+
         console.print(table)
         return
 
@@ -144,7 +146,7 @@ def main(
         settings["reverb"] = reverb
     if denoise:
         settings["denoise"] = denoise
-    
+
     # パフォーマンス最適化設定
     if chunk_processing:
         settings["chunk_processing"] = True
@@ -155,7 +157,7 @@ def main(
 
     # プラグインマネージャーを設定に追加
     settings["plugin_manager"] = plugin_manager
-    
+
     # 処理実行
     try:
         with Progress(
@@ -181,12 +183,12 @@ def process_audio(
     verbose: bool,
 ) -> None:
     """音声処理メイン"""
-    
+
     # パフォーマンス最適化オプションの確認
     chunk_processing = settings.get("chunk_processing", False)
     streaming = settings.get("streaming", False)
     preview_mode = settings.get("preview_mode", False)
-    
+
     # メモリ使用量の推定
     if verbose:
         vocal_info = sf.info(str(vocal_path))
@@ -194,30 +196,36 @@ def process_audio(
         total_duration = max(vocal_info.duration, bgm_info.duration)
         memory_estimate = MemoryOptimizedProcessor.estimate_memory_usage(total_duration)
         console.print(f"[yellow]Estimated memory usage: {memory_estimate:.1f} MB[/yellow]")
-        
+
         if memory_estimate > 1000 and not (chunk_processing or streaming):
-            console.print("[yellow]Warning: Large file detected. Consider using --chunk-processing or --streaming[/yellow]")
+            console.print(
+                "[yellow]Warning: Large file detected. Consider using --chunk-processing or --streaming[/yellow]"
+            )
 
     # 1. 音声ファイル読み込み
     task = progress.add_task("[cyan]Loading audio files...", total=2)
 
     loader = AudioLoader(target_sample_rate=44100, normalize=True)
-    
+
     # プレビューモードの場合は30秒のみ読み込む
     if preview_mode:
         vocal_audio = loader.load(vocal_path)
         bgm_audio = loader.load(bgm_path)
-        
+
         # 30秒にトリミング
-        vocal_audio.data = MemoryOptimizedProcessor.downsample_for_preview(vocal_audio.data, 30.0, vocal_audio.sample_rate)
-        bgm_audio.data = MemoryOptimizedProcessor.downsample_for_preview(bgm_audio.data, 30.0, bgm_audio.sample_rate)
-        
+        vocal_audio.data = MemoryOptimizedProcessor.downsample_for_preview(
+            vocal_audio.data, 30.0, vocal_audio.sample_rate
+        )
+        bgm_audio.data = MemoryOptimizedProcessor.downsample_for_preview(
+            bgm_audio.data, 30.0, bgm_audio.sample_rate
+        )
+
         if verbose:
             console.print("[yellow]Preview mode: Processing first 30 seconds only[/yellow]")
     else:
         vocal_audio = loader.load(vocal_path)
         bgm_audio = loader.load(bgm_path)
-    
+
     progress.update(task, advance=2)
 
     if verbose:

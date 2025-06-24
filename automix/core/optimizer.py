@@ -4,15 +4,13 @@
 """
 import gc
 import multiprocessing as mp
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from collections.abc import Callable, Generator
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
-from typing import Callable, Generator, Optional, Tuple
 
 import numpy as np
 import soundfile as sf
 from numpy.typing import NDArray
-
-from ..core.audio_loader import AudioFile
 
 
 class ChunkedProcessor:
@@ -22,7 +20,7 @@ class ChunkedProcessor:
         self,
         chunk_duration: float = 30.0,  # 秒
         overlap_duration: float = 0.5,  # 秒
-        max_workers: Optional[int] = None,
+        max_workers: int | None = None,
     ):
         """
         Args:
@@ -36,7 +34,7 @@ class ChunkedProcessor:
 
     def read_chunks(
         self, file_path: Path, sample_rate: int = 44100
-    ) -> Generator[Tuple[NDArray[np.float32], int, int], None, None]:
+    ) -> Generator[tuple[NDArray[np.float32], int, int], None, None]:
         """ファイルをチャンクごとに読み込む"""
         info = sf.info(str(file_path))
         total_frames = info.frames
@@ -145,7 +143,7 @@ class StreamingProcessor:
 class ParallelMixProcessor:
     """並列処理によるミックス処理の高速化"""
 
-    def __init__(self, num_workers: Optional[int] = None):
+    def __init__(self, num_workers: int | None = None):
         """
         Args:
             num_workers: ワーカー数（Noneの場合はCPU数）
@@ -185,7 +183,10 @@ class ParallelMixProcessor:
                 end = min((i + 1) * chunk_size, max_length)
 
                 # 各チャンクのデータを準備
-                chunk_data = [(track[start:end], gain) for track, gain in zip(padded_tracks, gains)]
+                chunk_data = [
+                    (track[start:end], gain)
+                    for track, gain in zip(padded_tracks, gains, strict=False)
+                ]
                 future = executor.submit(self._mix_chunk, chunk_data)
                 futures.append(future)
 
@@ -197,7 +198,7 @@ class ParallelMixProcessor:
         return np.concatenate(mixed_chunks)
 
     @staticmethod
-    def _mix_chunk(chunk_data: list[Tuple[NDArray[np.float32], float]]) -> NDArray[np.float32]:
+    def _mix_chunk(chunk_data: list[tuple[NDArray[np.float32], float]]) -> NDArray[np.float32]:
         """チャンクをミックス"""
         mixed = np.zeros_like(chunk_data[0][0])
         for chunk, gain in chunk_data:
@@ -208,7 +209,7 @@ class ParallelMixProcessor:
 class CacheManager:
     """処理結果のキャッシュ管理"""
 
-    def __init__(self, cache_dir: Optional[Path] = None):
+    def __init__(self, cache_dir: Path | None = None):
         """
         Args:
             cache_dir: キャッシュディレクトリ（Noneの場合は一時ディレクトリ）
@@ -225,7 +226,7 @@ class CacheManager:
         """キャッシュファイルのパスを取得"""
         import hashlib
 
-        hash_key = hashlib.md5(key.encode()).hexdigest()
+        hash_key = hashlib.md5(key.encode(), usedforsecurity=False).hexdigest()
         return self.cache_dir / f"{hash_key}{suffix}"
 
     def exists(self, key: str) -> bool:
@@ -237,7 +238,7 @@ class CacheManager:
         cache_path = self.get_cache_path(key)
         np.save(cache_path, data)
 
-    def load(self, key: str) -> Optional[NDArray[np.float32]]:
+    def load(self, key: str) -> NDArray[np.float32] | None:
         """キャッシュからデータを読み込む"""
         cache_path = self.get_cache_path(key)
         if cache_path.exists():
@@ -294,7 +295,7 @@ class MemoryOptimizedProcessor:
 def optimize_for_gpu() -> bool:
     """GPU最適化が可能か確認し、有効化を試みる"""
     try:
-        import cupy as cp
+        import cupy as cp  # noqa: F401
 
         # CuPyが利用可能
         print("GPU acceleration available via CuPy")

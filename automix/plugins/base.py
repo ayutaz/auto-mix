@@ -5,7 +5,7 @@ import importlib
 import inspect
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Type
+from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
@@ -18,10 +18,10 @@ class PluginInterface(ABC):
         self.name = name
         self.version = version
         self.enabled = True
-        self.config: Dict[str, Any] = {}
+        self.config: dict[str, Any] = {}
 
     @abstractmethod
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         """プラグイン情報を取得"""
         return {
             "name": self.name,
@@ -30,7 +30,7 @@ class PluginInterface(ABC):
             "enabled": self.enabled,
         }
 
-    def configure(self, config: Dict[str, Any]) -> None:
+    def configure(self, config: dict[str, Any]) -> None:
         """プラグインを設定"""
         self.config.update(config)
 
@@ -52,7 +52,7 @@ class AudioEffectPlugin(PluginInterface):
         pass
 
     @abstractmethod
-    def get_parameters(self) -> Dict[str, Any]:
+    def get_parameters(self) -> dict[str, Any]:
         """パラメータ定義を取得"""
         pass
 
@@ -68,14 +68,12 @@ class VisualizerPlugin(PluginInterface):
     """ビジュアライザープラグインのベースクラス"""
 
     @abstractmethod
-    def render(
-        self, audio_data: NDArray[np.float32], width: int, height: int
-    ) -> NDArray[np.uint8]:
+    def render(self, audio_data: NDArray[np.float32], width: int, height: int) -> NDArray[np.uint8]:
         """フレームをレンダリング"""
         pass
 
     @abstractmethod
-    def get_style_options(self) -> List[str]:
+    def get_style_options(self) -> list[str]:
         """利用可能なスタイルオプションを取得"""
         pass
 
@@ -84,12 +82,12 @@ class AnalyzerPlugin(PluginInterface):
     """音声解析プラグインのベースクラス"""
 
     @abstractmethod
-    def analyze(self, audio: NDArray[np.float32], sample_rate: int) -> Dict[str, Any]:
+    def analyze(self, audio: NDArray[np.float32], sample_rate: int) -> dict[str, Any]:
         """音声を解析"""
         pass
 
     @abstractmethod
-    def get_metrics(self) -> List[str]:
+    def get_metrics(self) -> list[str]:
         """解析可能なメトリクスを取得"""
         pass
 
@@ -97,10 +95,10 @@ class AnalyzerPlugin(PluginInterface):
 class PluginManager:
     """プラグインマネージャー"""
 
-    def __init__(self, plugin_dirs: Optional[List[Path]] = None):
-        self.plugins: Dict[str, PluginInterface] = {}
+    def __init__(self, plugin_dirs: list[Path] | None = None):
+        self.plugins: dict[str, PluginInterface] = {}
         self.plugin_dirs = plugin_dirs or []
-        self._plugin_types: Dict[str, Type[PluginInterface]] = {
+        self._plugin_types: dict[str, type[PluginInterface]] = {
             "audio_effect": AudioEffectPlugin,
             "visualizer": VisualizerPlugin,
             "analyzer": AnalyzerPlugin,
@@ -117,11 +115,11 @@ class PluginManager:
         if name in self.plugins:
             del self.plugins[name]
 
-    def get_plugin(self, name: str) -> Optional[PluginInterface]:
+    def get_plugin(self, name: str) -> PluginInterface | None:
         """プラグインを取得"""
         return self.plugins.get(name)
 
-    def list_plugins(self, plugin_type: Optional[str] = None) -> List[Dict[str, Any]]:
+    def list_plugins(self, plugin_type: str | None = None) -> list[dict[str, Any]]:
         """プラグインリストを取得"""
         plugins = []
         for plugin in self.plugins.values():
@@ -138,7 +136,7 @@ class PluginManager:
             spec.loader.exec_module(module)
 
             # プラグインクラスを探す
-            for name, obj in inspect.getmembers(module, inspect.isclass):
+            for _, obj in inspect.getmembers(module, inspect.isclass):
                 if (
                     issubclass(obj, PluginInterface)
                     and obj != PluginInterface
@@ -162,7 +160,7 @@ class PluginManager:
                 print(f"Failed to load plugin from {file_path}: {e}")
 
     def apply_audio_effect_chain(
-        self, audio: NDArray[np.float32], sample_rate: int, plugin_names: List[str]
+        self, audio: NDArray[np.float32], sample_rate: int, plugin_names: list[str]
     ) -> NDArray[np.float32]:
         """複数の音声エフェクトプラグインを連続適用"""
         result = audio.copy()
@@ -181,12 +179,12 @@ class PitchShiftPlugin(AudioEffectPlugin):
         super().__init__("pitch_shift", "1.0.0")
         self.semitones = 0.0
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         info = super().get_info()
         info["description"] = "Shifts the pitch of audio"
         return info
 
-    def get_parameters(self) -> Dict[str, Any]:
+    def get_parameters(self) -> dict[str, Any]:
         return {
             "semitones": {
                 "type": "float",
@@ -221,12 +219,12 @@ class NoiseGatePlugin(AudioEffectPlugin):
         self.attack_ms = 1.0
         self.release_ms = 100.0
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         info = super().get_info()
         info["description"] = "Reduces noise by gating quiet signals"
         return info
 
-    def get_parameters(self) -> Dict[str, Any]:
+    def get_parameters(self) -> dict[str, Any]:
         return {
             "threshold_db": {
                 "type": "float",
@@ -283,19 +281,21 @@ class SpectrumVisualizerPlugin(VisualizerPlugin):
         self.style = "bars"
         self.color_scheme = "rainbow"
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         info = super().get_info()
         info["description"] = "Displays audio spectrum"
         return info
 
-    def get_style_options(self) -> List[str]:
+    def get_style_options(self) -> list[str]:
         return ["bars", "line", "circular"]
 
-    def render(
-        self, audio_data: NDArray[np.float32], width: int, height: int
-    ) -> NDArray[np.uint8]:
+    def render(self, audio_data: NDArray[np.float32], width: int, height: int) -> NDArray[np.uint8]:
         # 簡易的なスペクトラム表示
-        import cv2
+        try:
+            import cv2
+        except ImportError:
+            # cv2が利用できない場合は空のフレームを返す
+            return np.zeros((height, width, 3), dtype=np.uint8)
 
         # FFT
         fft = np.fft.rfft(audio_data)
@@ -326,12 +326,18 @@ class SpectrumVisualizerPlugin(VisualizerPlugin):
     def _get_color(self, position: float) -> tuple:
         """位置に基づいて色を取得"""
         if self.color_scheme == "rainbow":
-            # HSVからRGBに変換
-            hue = int(position * 180)
-            color = cv2.cvtColor(
-                np.array([[[hue, 255, 255]]], dtype=np.uint8), cv2.COLOR_HSV2BGR
-            )[0, 0]
-            return tuple(int(c) for c in color)
+            try:
+                import cv2
+
+                # HSVからRGBに変換
+                hue = int(position * 180)
+                color = cv2.cvtColor(
+                    np.array([[[hue, 255, 255]]], dtype=np.uint8), cv2.COLOR_HSV2BGR
+                )[0, 0]
+                return tuple(int(c) for c in color)
+            except ImportError:
+                # cv2が利用できない場合はデフォルト色
+                return (255, 255, 255)
         else:
             # デフォルトは白
             return (255, 255, 255)
