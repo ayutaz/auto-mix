@@ -6,16 +6,26 @@ from pathlib import Path
 
 import click
 import numpy as np
+import soundfile as sf
 import yaml
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TimeElapsedColumn
 from rich.table import Table
 
+from . import __version__
 from .core.analyzer import AudioAnalyzer
 from .core.audio_loader import AudioFile, AudioLoader
 from .core.effects import ReverbProcessor
 from .core.mastering import MasteringProcessor
+from .core.optimizer import ChunkedProcessor, MemoryOptimizedProcessor, StreamingProcessor
 from .core.processor import MixProcessor
+from .plugins.base import PluginManager, PitchShiftPlugin, NoiseGatePlugin
+from .plugins.custom_effects import (
+    VintageWarmthPlugin,
+    VocalEnhancerPlugin,
+    StereoEnhancerPlugin,
+    HarmonicExciterPlugin
+)
 from .video.encoder import VideoEncoder, VideoSettings
 from .video.visualizer import VisualizerComposite
 
@@ -23,6 +33,7 @@ console = Console()
 
 
 @click.command()
+@click.version_option(version=__version__, prog_name="automix")
 @click.option("-v", "--vocal", required=True, type=click.Path(exists=True), help="Vocal audio file")
 @click.option("-b", "--bgm", required=True, type=click.Path(exists=True), help="BGM audio file")
 @click.option("-o", "--output", required=True, type=click.Path(), help="Output file path")
@@ -44,6 +55,11 @@ console = Console()
 @click.option("--config", type=click.Path(exists=True), help="Configuration file")
 @click.option("--verbose", is_flag=True, help="Verbose output")
 @click.option("--version", is_flag=True, help="Show version")
+@click.option("--chunk-processing", is_flag=True, help="Use chunk processing for large files")
+@click.option("--streaming", is_flag=True, help="Use streaming processing (low memory usage)")
+@click.option("--preview-mode", is_flag=True, help="Process only 30 seconds for preview")
+@click.option("--plugin-dir", type=click.Path(exists=True), help="Directory containing custom plugins")
+@click.option("--list-plugins", is_flag=True, help="List available plugins and exit")
 def main(
     vocal: str,
     bgm: str,
@@ -59,6 +75,11 @@ def main(
     config: str | None,
     verbose: bool,
     version: bool,
+    chunk_processing: bool,
+    streaming: bool,
+    preview_mode: bool,
+    plugin_dir: str | None,
+    list_plugins: bool,
 ):
     """Auto mixing and video generation for vocal covers"""
 
@@ -66,6 +87,43 @@ def main(
         from . import __version__
 
         console.print(f"automix version {__version__}")
+        return
+    
+    # プラグインマネージャーを初期化
+    plugin_manager = PluginManager()
+    
+    # 組み込みプラグインを登録
+    plugin_manager.register_plugin(PitchShiftPlugin())
+    plugin_manager.register_plugin(NoiseGatePlugin())
+    plugin_manager.register_plugin(VintageWarmthPlugin())
+    plugin_manager.register_plugin(VocalEnhancerPlugin())
+    plugin_manager.register_plugin(StereoEnhancerPlugin())
+    plugin_manager.register_plugin(HarmonicExciterPlugin())
+    
+    # カスタムプラグインディレクトリから読み込み
+    if plugin_dir:
+        plugin_manager.load_plugins_from_directory(Path(plugin_dir))
+    
+    # プラグインリストを表示
+    if list_plugins:
+        table = Table(title="Available Plugins")
+        table.add_column("Name", style="cyan")
+        table.add_column("Type", style="green")
+        table.add_column("Version", style="yellow")
+        table.add_column("Description", style="white")
+        
+        for plugin_info in plugin_manager.list_plugins():
+            plugin = plugin_manager.get_plugin(plugin_info["name"])
+            if plugin:
+                info = plugin.get_info()
+                table.add_row(
+                    info["name"],
+                    info["type"],
+                    info["version"],
+                    info.get("description", "No description")
+                )
+        
+        console.print(table)
         return
 
     # 設定ファイルを読み込み
@@ -86,7 +144,18 @@ def main(
         settings["reverb"] = reverb
     if denoise:
         settings["denoise"] = denoise
+    
+    # パフォーマンス最適化設定
+    if chunk_processing:
+        settings["chunk_processing"] = True
+    if streaming:
+        settings["streaming"] = True
+    if preview_mode:
+        settings["preview_mode"] = True
 
+    # プラグインマネージャーを設定に追加
+    settings["plugin_manager"] = plugin_manager
+    
     # 処理実行
     try:
         with Progress(
@@ -112,16 +181,44 @@ def process_audio(
     verbose: bool,
 ) -> None:
     """音声処理メイン"""
+    
+    # パフォーマンス最適化オプションの確認
+    chunk_processing = settings.get("chunk_processing", False)
+    streaming = settings.get("streaming", False)
+    preview_mode = settings.get("preview_mode", False)
+    
+    # メモリ使用量の推定
+    if verbose:
+        vocal_info = sf.info(str(vocal_path))
+        bgm_info = sf.info(str(bgm_path))
+        total_duration = max(vocal_info.duration, bgm_info.duration)
+        memory_estimate = MemoryOptimizedProcessor.estimate_memory_usage(total_duration)
+        console.print(f"[yellow]Estimated memory usage: {memory_estimate:.1f} MB[/yellow]")
+        
+        if memory_estimate > 1000 and not (chunk_processing or streaming):
+            console.print("[yellow]Warning: Large file detected. Consider using --chunk-processing or --streaming[/yellow]")
 
     # 1. 音声ファイル読み込み
     task = progress.add_task("[cyan]Loading audio files...", total=2)
 
     loader = AudioLoader(target_sample_rate=44100, normalize=True)
-    vocal_audio = loader.load(vocal_path)
-    progress.update(task, advance=1)
-
-    bgm_audio = loader.load(bgm_path)
-    progress.update(task, advance=1)
+    
+    # プレビューモードの場合は30秒のみ読み込む
+    if preview_mode:
+        vocal_audio = loader.load(vocal_path)
+        bgm_audio = loader.load(bgm_path)
+        
+        # 30秒にトリミング
+        vocal_audio.data = MemoryOptimizedProcessor.downsample_for_preview(vocal_audio.data, 30.0, vocal_audio.sample_rate)
+        bgm_audio.data = MemoryOptimizedProcessor.downsample_for_preview(bgm_audio.data, 30.0, bgm_audio.sample_rate)
+        
+        if verbose:
+            console.print("[yellow]Preview mode: Processing first 30 seconds only[/yellow]")
+    else:
+        vocal_audio = loader.load(vocal_path)
+        bgm_audio = loader.load(bgm_path)
+    
+    progress.update(task, advance=2)
 
     if verbose:
         console.print(f"Vocal: {vocal_audio.duration:.1f}s, {vocal_audio.sample_rate}Hz")

@@ -5,14 +5,28 @@ import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import cv2
 import numpy as np
 import pytest
 
-from automix.video.encoder import CodecOptions, VideoEncoder, VideoSettings
-from automix.video.text_overlay import LyricsRenderer, TextOverlay
+from automix.video.encoder import (
+    CodecOptions,
+    StreamingEncoder,
+    ThumbnailGenerator,
+    VideoEncoder,
+    VideoSettings,
+)
+from automix.video.text_overlay import (
+    LyricsRenderer,
+    MetadataDisplay,
+    TextOverlay,
+    TextStyle,
+)
 from automix.video.visualizer import (
     ParticleVisualizer,
     SpectrumVisualizer,
+    VisualizerComposite,
+    VisualizerConfig,
     WaveformVisualizer,
 )
 
@@ -332,3 +346,598 @@ class TestVideoEncoder:
             settings = VideoSettings.from_preset(preset_name)
             assert settings.width == width
             assert settings.height == height
+
+
+class TestVideoEncoderEdgeCases:
+    """VideoEncoderのエッジケーステスト"""
+    
+    def test_empty_frames(self):
+        """空のフレームリストのテスト"""
+        settings = VideoSettings()
+        encoder = VideoEncoder(settings)
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "output.mp4"
+            audio = np.zeros(44100)
+            
+            with pytest.raises(Exception):
+                encoder.encode([], audio, output_path)
+                
+    def test_single_frame(self):
+        """単一フレームのテスト"""
+        settings = VideoSettings(width=640, height=480, fps=1)
+        encoder = VideoEncoder(settings)
+        
+        frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        audio = np.zeros(44100)
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "output.mp4"
+            
+            with patch('automix.video.encoder.subprocess.run') as mock_run:
+                mock_run.return_value.returncode = 0
+                encoder.encode([frame], audio, output_path)
+                assert mock_run.called
+                
+    def test_invalid_codec(self):
+        """無効なコーデックのテスト"""
+        settings = VideoSettings.from_preset("1080p")
+        settings.codec = "invalid_codec"
+        
+        encoder = VideoEncoder(settings)
+        # デフォルトのh264にフォールバック
+        assert encoder.codec_options["codec"] == "libx264"
+        
+    def test_extreme_bitrate(self):
+        """極端なビットレートのテスト"""
+        # 非常に低いビットレート
+        settings_low = VideoSettings(bitrate="100k")
+        encoder_low = VideoEncoder(settings_low)
+        assert encoder_low.settings.bitrate == "100k"
+        
+        # 非常に高いビットレート
+        settings_high = VideoSettings(bitrate="100M")
+        encoder_high = VideoEncoder(settings_high)
+        assert encoder_high.settings.bitrate == "100M"
+        
+    @patch('automix.video.encoder.cv2.imwrite')
+    def test_frame_saving_error(self, mock_imwrite):
+        """フレーム保存エラーのテスト"""
+        mock_imwrite.return_value = False  # 保存失敗
+        
+        settings = VideoSettings()
+        encoder = VideoEncoder(settings)
+        
+        frames = [np.zeros((480, 640, 3), dtype=np.uint8)]
+        audio = np.zeros(44100)
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "output.mp4"
+            
+            # フレーム保存に失敗してもエラーハンドリングされる
+            with pytest.raises(Exception):
+                encoder.encode(frames, audio, output_path)
+                
+    def test_audio_normalization(self):
+        """音声正規化のテスト"""
+        encoder = VideoEncoder(VideoSettings())
+        
+        # クリッピングする音声
+        audio = np.ones(44100) * 2.0
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            audio_path = Path(tmpdir) / "audio.wav"
+            
+            with patch('soundfile.write') as mock_write:
+                encoder._save_audio(audio, audio_path, 44100)
+                
+                # 正規化された音声が保存される
+                saved_audio = mock_write.call_args[0][1]
+                assert np.max(np.abs(saved_audio)) <= 0.95
+                
+    def test_ffmpeg_not_found(self):
+        """FFmpegが見つからない場合のテスト"""
+        encoder = VideoEncoder(VideoSettings())
+        
+        with patch('automix.video.encoder.subprocess.run') as mock_run:
+            mock_run.side_effect = FileNotFoundError()
+            
+            with tempfile.TemporaryDirectory() as tmpdir:
+                with pytest.raises(RuntimeError, match="FFmpeg not found"):
+                    encoder._create_video(
+                        "frame_%06d.png",
+                        Path(tmpdir) / "audio.wav",
+                        Path(tmpdir) / "output.mp4",
+                        False
+                    )
+                    
+    def test_encoding_failure(self):
+        """エンコーディング失敗のテスト"""
+        import subprocess
+        encoder = VideoEncoder(VideoSettings())
+        
+        with patch('automix.video.encoder.subprocess.run') as mock_run:
+            mock_run.side_effect = subprocess.CalledProcessError(1, 'ffmpeg')
+            
+            with tempfile.TemporaryDirectory() as tmpdir:
+                with pytest.raises(RuntimeError, match="FFmpeg encoding failed"):
+                    encoder._create_video(
+                        "frame_%06d.png",
+                        Path(tmpdir) / "audio.wav",
+                        Path(tmpdir) / "output.mp4",
+                        False
+                    )
+
+
+class TestStreamingEncoder:
+    """StreamingEncoderのテスト"""
+    
+    def test_streaming_initialization(self):
+        """ストリーミング初期化のテスト"""
+        settings = VideoSettings(width=1280, height=720, fps=30)
+        encoder = StreamingEncoder(settings)
+        
+        assert encoder.settings == settings
+        assert encoder.process is None
+        
+    @patch('subprocess.Popen')
+    def test_start_streaming(self, mock_popen):
+        """ストリーミング開始のテスト"""
+        mock_process = MagicMock()
+        mock_popen.return_value = mock_process
+        
+        encoder = StreamingEncoder(VideoSettings())
+        encoder.start_encoding("rtmp://localhost/live/stream")
+        
+        assert mock_popen.called
+        assert encoder.process == mock_process
+        
+        # FFmpegコマンドの確認
+        cmd = mock_popen.call_args[0][0]
+        assert "ffmpeg" in cmd
+        assert "rtmp://localhost/live/stream" in cmd
+        
+    def test_write_frame_without_process(self):
+        """プロセスなしでのフレーム書き込みテスト"""
+        encoder = StreamingEncoder(VideoSettings())
+        frame = np.zeros((720, 1280, 3), dtype=np.uint8)
+        
+        # プロセスが開始されていない場合は何も起きない
+        encoder.write_frame(frame)
+        
+    def test_write_audio_conversion(self):
+        """音声変換のテスト"""
+        encoder = StreamingEncoder(VideoSettings())
+        
+        # モックプロセス
+        encoder.process = MagicMock()
+        encoder.process.stdin = MagicMock()
+        
+        # Float32音声
+        audio = np.array([0.5, -0.5, 0.25, -0.25], dtype=np.float32)
+        encoder.write_audio(audio)
+        
+        # Int16に変換されて書き込まれる
+        encoder.process.stdin.write.assert_called_once()
+        written_data = encoder.process.stdin.write.call_args[0][0]
+        
+        # バイト列から復元して確認
+        audio_int16 = np.frombuffer(written_data, dtype=np.int16)
+        assert len(audio_int16) == len(audio)
+        assert np.max(np.abs(audio_int16)) <= 32767
+        
+    def test_stop_encoding(self):
+        """エンコーディング停止のテスト"""
+        encoder = StreamingEncoder(VideoSettings())
+        
+        # モックプロセス
+        mock_process = MagicMock()
+        encoder.process = mock_process
+        
+        encoder.stop_encoding()
+        
+        mock_process.stdin.close.assert_called_once()
+        mock_process.wait.assert_called_once()
+        assert encoder.process is None
+
+
+class TestThumbnailGenerator:
+    """ThumbnailGeneratorのテスト"""
+    
+    @patch('cv2.VideoCapture')
+    @patch('cv2.imwrite')
+    def test_generate_from_video(self, mock_imwrite, mock_capture):
+        """動画からのサムネイル生成テスト"""
+        # モックビデオキャプチャ
+        mock_cap = MagicMock()
+        mock_cap.get.return_value = 30.0  # FPS
+        mock_cap.read.return_value = (True, np.zeros((1080, 1920, 3), dtype=np.uint8))
+        mock_capture.return_value = mock_cap
+        mock_imwrite.return_value = True
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            video_path = Path(tmpdir) / "video.mp4"
+            output_path = Path(tmpdir) / "thumb.jpg"
+            
+            ThumbnailGenerator.generate_from_video(
+                video_path, output_path, time_offset=5.0, size=(640, 360)
+            )
+            
+            # 正しいフレームにシークされた
+            mock_cap.set.assert_called_with(cv2.CAP_PROP_POS_FRAMES, 150)  # 5秒 * 30fps
+            mock_imwrite.assert_called_once()
+            
+    @patch('cv2.VideoCapture')
+    def test_video_read_failure(self, mock_capture):
+        """動画読み込み失敗のテスト"""
+        mock_cap = MagicMock()
+        mock_cap.read.return_value = (False, None)
+        mock_capture.return_value = mock_cap
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            video_path = Path(tmpdir) / "video.mp4"
+            output_path = Path(tmpdir) / "thumb.jpg"
+            
+            with pytest.raises(RuntimeError, match="Failed to read frame"):
+                ThumbnailGenerator.generate_from_video(video_path, output_path)
+                
+    @patch('cv2.imwrite')
+    def test_generate_from_frames(self, mock_imwrite):
+        """フレームからのサムネイル生成テスト"""
+        mock_imwrite.return_value = True
+        
+        # テストフレーム
+        frames = [np.full((480, 640, 3), i*50, dtype=np.uint8) for i in range(5)]
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "thumb.jpg"
+            
+            # シングルレイアウト
+            ThumbnailGenerator.generate_from_frames(
+                frames, output_path, layout="single"
+            )
+            assert mock_imwrite.called
+            
+            # グリッドレイアウト
+            mock_imwrite.reset_mock()
+            ThumbnailGenerator.generate_from_frames(
+                frames, output_path, layout="grid"
+            )
+            assert mock_imwrite.called
+            
+            # ストリップレイアウト
+            mock_imwrite.reset_mock()
+            ThumbnailGenerator.generate_from_frames(
+                frames, output_path, layout="strip"
+            )
+            assert mock_imwrite.called
+            
+    def test_frame_indices_selection(self):
+        """フレームインデックス選択のテスト"""
+        frames = [np.zeros((100, 100, 3), dtype=np.uint8) for _ in range(100)]
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "thumb.jpg"
+            
+            with patch('cv2.imwrite') as mock_imwrite:
+                mock_imwrite.return_value = True
+                
+                # カスタムインデックス
+                ThumbnailGenerator.generate_from_frames(
+                    frames, output_path, frame_indices=[0, 25, 50, 75, 99]
+                )
+                
+                # デフォルトインデックス（均等分割）
+                ThumbnailGenerator.generate_from_frames(
+                    frames, output_path, frame_indices=None
+                )
+
+
+class TestVisualizerEdgeCases:
+    """ビジュアライザーのエッジケーステスト"""
+    
+    def test_waveform_empty_audio(self):
+        """空の音声データのテスト"""
+        visualizer = WaveformVisualizer()
+        
+        empty_audio = np.array([])
+        frame = visualizer.render_frame(empty_audio)
+        
+        # 黒い画像が返される
+        assert frame.shape == (1080, 1920, 3)
+        assert np.all(frame == 0)
+        
+    def test_waveform_extreme_values(self):
+        """極端な値のテスト"""
+        visualizer = WaveformVisualizer(width=800, height=600)
+        
+        # クリッピングする音声
+        clipping_audio = np.ones(1000) * 10.0
+        frame = visualizer.render_frame(clipping_audio)
+        
+        # 描画されるが画面内に収まる
+        assert frame.shape == (600, 800, 3)
+        assert np.any(frame > 0)
+        
+    def test_spectrum_short_audio(self):
+        """短い音声のスペクトラムテスト"""
+        visualizer = SpectrumVisualizer(fft_size=2048)
+        
+        # FFTサイズより短い音声
+        short_audio = np.random.normal(0, 0.3, 1000)
+        frame = visualizer.render_frame(short_audio)
+        
+        assert frame.shape == (1080, 1920, 3)
+        
+    def test_spectrum_dc_offset(self):
+        """DCオフセットのあるスペクトラムテスト"""
+        visualizer = SpectrumVisualizer()
+        
+        # DCオフセット付き信号
+        audio = np.ones(2048) * 0.5 + np.sin(2 * np.pi * 440 * np.linspace(0, 1, 2048)) * 0.3
+        frame = visualizer.render_frame(audio)
+        
+        assert np.any(frame > 0)
+        
+    def test_particle_maximum_limit(self):
+        """パーティクル最大数制限のテスト"""
+        visualizer = ParticleVisualizer(max_particles=10)
+        
+        # 大量のパーティクルを生成しようとする
+        for _ in range(20):
+            frame = visualizer.render_frame(1.0, np.ones(32))
+            
+        # 最大数を超えない
+        assert len(visualizer.particles) <= 10
+        
+    def test_particle_boundary_conditions(self):
+        """パーティクル境界条件のテスト"""
+        visualizer = ParticleVisualizer(
+            width=800, height=600,
+            gravity=(0, 0),  # 重力なし
+            wind=(10, 0)  # 強い横風
+        )
+        
+        # 複数フレームで境界外に出るパーティクルをテスト
+        for _ in range(100):
+            frame = visualizer.render_frame(0.5)
+            
+        # 画面内のパーティクルのみ残る
+        for p in visualizer.particles:
+            assert 0 <= p['x'] <= 800
+            assert 0 <= p['y'] <= 600
+            
+    def test_composite_visualizer(self):
+        """複合ビジュアライザーのテスト"""
+        composite = VisualizerComposite(width=1920, height=1080)
+        
+        # 各種ブレンドモード
+        audio = np.sin(2 * np.pi * 440 * np.linspace(0, 0.1, 4410))
+        
+        for blend_mode in ['overlay', 'screen', 'add']:
+            frame = composite.render_composite_frame(audio, blend_mode)
+            assert frame.shape == (1080, 1920, 3)
+            assert frame.dtype == np.uint8
+            assert np.any(frame > 0)
+
+
+class TestTextOverlayEdgeCases:
+    """テキストオーバーレイのエッジケーステスト"""
+    
+    def test_empty_text(self):
+        """空のテキストのテスト"""
+        overlay = TextOverlay()
+        background = np.zeros((1080, 1920, 3), dtype=np.uint8)
+        
+        frame = overlay.add_text(background, "", (100, 100))
+        # 背景と同じ
+        assert np.array_equal(frame, background)
+        
+    def test_text_outside_bounds(self):
+        """画面外のテキストのテスト"""
+        overlay = TextOverlay(width=800, height=600)
+        background = np.zeros((600, 800, 3), dtype=np.uint8)
+        
+        # 画面外の位置
+        frame = overlay.add_text(background, "Outside", (900, 700))
+        # エラーにならない
+        assert frame.shape == background.shape
+        
+    def test_text_wrapping(self):
+        """テキスト折り返しのテスト"""
+        overlay = TextOverlay()
+        background = np.zeros((720, 1280, 3), dtype=np.uint8)
+        
+        long_text = "This is a very long text that should be wrapped to multiple lines when the maximum width is specified"
+        
+        frame = overlay.add_multiline_text(
+            background, long_text, (50, 50), max_width=300
+        )
+        
+        assert frame.shape == background.shape
+        assert np.any(frame > 0)
+        
+    def test_text_alignment(self):
+        """テキスト配置のテスト"""
+        overlay = TextOverlay()
+        background = np.zeros((600, 800, 3), dtype=np.uint8)
+        
+        text = "Aligned Text"
+        
+        for align in ['left', 'center', 'right']:
+            frame = overlay.add_multiline_text(
+                background, text, (400, 300), align=align
+            )
+            assert not np.array_equal(frame, background)
+            
+    def test_text_style_combination(self):
+        """テキストスタイルの組み合わせテスト"""
+        overlay = TextOverlay()
+        background = np.zeros((480, 640, 3), dtype=np.uint8)
+        
+        style = TextStyle(
+            font_size=72,
+            font_color=(255, 255, 255),
+            background_color=(0, 0, 0, 200),
+            outline_color=(255, 0, 0),
+            outline_thickness=3,
+            shadow_offset=(5, 5),
+            shadow_color=(128, 128, 128)
+        )
+        
+        frame = overlay.add_text(
+            background, "Styled Text", (50, 100), style=style
+        )
+        
+        assert np.any(frame > 0)
+        
+    def test_lyrics_no_subtitles(self):
+        """字幕なしの歌詞レンダラーテスト"""
+        renderer = LyricsRenderer()  # SRTファイルなし
+        background = np.zeros((720, 1280, 3), dtype=np.uint8)
+        
+        frame = renderer.render_lyrics_frame(background, 5.0)
+        # 背景と同じ
+        assert np.array_equal(frame, background)
+        
+    def test_lyrics_invalid_time(self):
+        """無効な時刻での歌詞取得テスト"""
+        renderer = LyricsRenderer()
+        
+        # 負の時刻
+        lyrics = renderer.get_lyrics_at_time(-1.0)
+        assert lyrics is None
+        
+        # 非常に大きな時刻
+        lyrics = renderer.get_lyrics_at_time(999999.0)
+        assert lyrics is None
+        
+    def test_metadata_display(self):
+        """メタデータ表示のテスト"""
+        display = MetadataDisplay()
+        background = np.zeros((1080, 1920, 3), dtype=np.uint8)
+        
+        # 各種位置でのメタデータ表示
+        positions = ['top-left', 'top-right', 'bottom-left', 'bottom-right']
+        
+        for pos in positions:
+            frame = display.render_metadata(
+                background,
+                title="Test Song",
+                artist="Test Artist",
+                additional_info={"Album": "Test Album", "Year": "2024"},
+                position=pos,
+                fade_alpha=0.8
+            )
+            assert not np.array_equal(frame, background)
+            
+    def test_metadata_fade_effect(self):
+        """メタデータフェード効果のテスト"""
+        display = MetadataDisplay()
+        background = np.zeros((720, 1280, 3), dtype=np.uint8)
+        
+        # フェードアニメーション
+        frames = []
+        for alpha in np.linspace(0, 1, 10):
+            frame = display.render_metadata(
+                background,
+                "Fading Title",
+                "Fading Artist",
+                fade_alpha=alpha
+            )
+            frames.append(frame)
+            
+        # フェードによって変化している
+        for i in range(1, len(frames)):
+            assert not np.array_equal(frames[i], frames[i-1])
+
+
+class TestIntegrationVideo:
+    """ビデオ機能の統合テスト"""
+    
+    def test_full_video_pipeline(self):
+        """完全なビデオパイプラインのテスト"""
+        # 設定
+        width, height = 640, 480
+        fps = 10
+        duration = 2.0
+        sample_rate = 44100
+        
+        # 音声生成
+        t = np.linspace(0, duration, int(sample_rate * duration))
+        audio = np.sin(2 * np.pi * 440 * t) * 0.5
+        
+        # ビジュアライザー
+        waveform_viz = WaveformVisualizer(width, height, sample_rate)
+        spectrum_viz = SpectrumVisualizer(width, height, sample_rate)
+        
+        # テキストオーバーレイ
+        text_overlay = TextOverlay(width, height)
+        
+        # フレーム生成
+        frames = []
+        samples_per_frame = int(sample_rate / fps)
+        
+        for i in range(int(duration * fps)):
+            # 音声チャンク
+            start = i * samples_per_frame
+            end = start + samples_per_frame
+            audio_chunk = audio[start:end] if end <= len(audio) else audio[start:]
+            
+            # ビジュアライズ
+            wave_frame = waveform_viz.render_frame(audio_chunk)
+            spec_frame = spectrum_viz.render_frame(audio_chunk)
+            
+            # 合成
+            frame = cv2.addWeighted(wave_frame, 0.5, spec_frame, 0.5, 0)
+            
+            # テキスト追加
+            frame = text_overlay.add_text(
+                frame, f"Frame {i+1}/{int(duration * fps)}",
+                (10, 30), alpha=0.8
+            )
+            
+            frames.append(frame)
+            
+        assert len(frames) == int(duration * fps)
+        assert all(f.shape == (height, width, 3) for f in frames)
+        
+    @patch('subprocess.run')
+    @patch('cv2.imwrite')
+    @patch('soundfile.write')
+    def test_encoder_integration(self, mock_sf_write, mock_cv_write, mock_subprocess):
+        """エンコーダー統合テスト"""
+        mock_cv_write.return_value = True
+        mock_subprocess.return_value.returncode = 0
+        
+        # ビデオ設定
+        settings = VideoSettings(
+            width=1280,
+            height=720,
+            fps=24,
+            codec="h264",
+            preset="fast"
+        )
+        
+        encoder = VideoEncoder(settings)
+        
+        # テストデータ
+        frames = [np.random.randint(0, 255, (720, 1280, 3), dtype=np.uint8) for _ in range(24)]
+        audio = np.sin(2 * np.pi * 440 * np.linspace(0, 1, 44100))
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_path = Path(tmpdir) / "test_video.mp4"
+            
+            encoder.encode(frames, audio, output_path, sample_rate=44100)
+            
+            # 各コンポーネントが呼ばれた
+            assert mock_cv_write.call_count == len(frames)
+            assert mock_sf_write.called
+            assert mock_subprocess.called
+            
+            # FFmpegコマンドの確認
+            ffmpeg_cmd = mock_subprocess.call_args[0][0]
+            assert "-c:v" in ffmpeg_cmd
+            assert "libx264" in ffmpeg_cmd
+            assert "-preset" in ffmpeg_cmd
+            assert "fast" in ffmpeg_cmd
