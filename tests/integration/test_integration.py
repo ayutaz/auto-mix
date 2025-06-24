@@ -107,8 +107,8 @@ class TestEndToEndWorkflow:
             bgm_path.unlink(missing_ok=True)
 
     @pytest.mark.slow
-    @patch("automix.video.encoder.moviepy")
-    def test_complete_video_generation_pipeline(self, mock_moviepy, create_test_audio):
+    @patch("automix.video.encoder.mpe")
+    def test_complete_video_generation_pipeline(self, mock_mpe, create_test_audio):
         """完全な動画生成パイプラインのテスト"""
         # テスト音声を作成
         audio_path, sr = create_test_audio(duration=2.0)
@@ -146,7 +146,7 @@ class TestEndToEndWorkflow:
             with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as f:
                 output_path = Path(f.name)
 
-            mock_moviepy.VideoFileClip.return_value.write_videofile = lambda *args, **kwargs: None
+            mock_mpe.VideoFileClip.return_value.write_videofile = lambda *args, **kwargs: None
             encoder.encode(frames, audio_file.data, output_path, sample_rate=sr)
 
             output_path.unlink(missing_ok=True)

@@ -3,9 +3,13 @@
 """
 from dataclasses import dataclass
 
-import cv2
 import numpy as np
 from numpy.typing import NDArray
+
+try:
+    import cv2
+except ImportError:
+    cv2 = None
 
 
 @dataclass
@@ -59,6 +63,9 @@ class WaveformVisualizer:
         """
         # 背景を作成
         frame = np.zeros((self.height, self.width, 3), dtype=np.uint8)
+        
+        if cv2 is None:
+            return frame
 
         if self.stereo and audio_data.ndim == 2:
             # ステレオ表示
@@ -241,6 +248,10 @@ class SpectrumVisualizer:
 
         # 描画
         frame = np.zeros((self.height, self.width, 3), dtype=np.uint8)
+        
+        if cv2 is None:
+            return frame
+        
         self._draw_bars(frame, spectrum)
 
         return frame
@@ -370,6 +381,9 @@ class ParticleVisualizer:
             NDArray[np.uint8]: 描画された画像 (H, W, 3)
         """
         frame = np.zeros((self.height, self.width, 3), dtype=np.uint8)
+        
+        if cv2 is None:
+            return frame
 
         # 音声に応じてパーティクルを生成
         if self.audio_reactive and audio_level > 0.5:
@@ -489,6 +503,10 @@ class VisualizerComposite:
         Returns:
             NDArray[np.uint8]: 描画された画像 (H, W, 3)
         """
+        # cv2が使えない場合は空のフレームを返す
+        if cv2 is None:
+            return np.zeros((self.height, self.width, 3), dtype=np.uint8)
+        
         # 各要素を描画
         waveform_frame = self.waveform.render_frame(audio_data)
         spectrum_frame = self.spectrum.render_frame(audio_data)

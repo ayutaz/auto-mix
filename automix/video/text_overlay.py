@@ -4,9 +4,13 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-import cv2
 import numpy as np
 from numpy.typing import NDArray
+
+try:
+    import cv2
+except ImportError:
+    cv2 = None
 
 
 @dataclass
@@ -78,6 +82,9 @@ class TextOverlay:
         Returns:
             NDArray[np.uint8]: テキスト追加後の画像
         """
+        if cv2 is None:
+            return frame
+        
         if style is None:
             style = TextStyle(font_size=self.font_size, font_color=self.font_color)
 

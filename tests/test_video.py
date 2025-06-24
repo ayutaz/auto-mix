@@ -5,24 +5,31 @@ import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import cv2
 import numpy as np
 import pytest
 
-from automix.video.encoder import (
+try:
+    import cv2
+except ImportError:
+    cv2 = None
+
+# cv2が利用できない場合はテストをスキップ
+pytestmark = pytest.mark.skipif(cv2 is None, reason="OpenCV (cv2) not installed")
+
+from automix.video.encoder import (  # noqa: E402
     CodecOptions,
     StreamingEncoder,
     ThumbnailGenerator,
     VideoEncoder,
     VideoSettings,
 )
-from automix.video.text_overlay import (
+from automix.video.text_overlay import (  # noqa: E402
     LyricsRenderer,
     MetadataDisplay,
     TextOverlay,
     TextStyle,
 )
-from automix.video.visualizer import (
+from automix.video.visualizer import (  # noqa: E402
     ParticleVisualizer,
     SpectrumVisualizer,
     VisualizerComposite,
@@ -869,7 +876,11 @@ class TestIntegrationVideo:
             spec_frame = spectrum_viz.render_frame(audio_chunk)
 
             # 合成
-            frame = cv2.addWeighted(wave_frame, 0.5, spec_frame, 0.5, 0)
+            if cv2 is not None:
+                frame = cv2.addWeighted(wave_frame, 0.5, spec_frame, 0.5, 0)
+            else:
+                # cv2が使えない場合は簡易的な合成
+                frame = (wave_frame * 0.5 + spec_frame * 0.5).astype(np.uint8)
 
             # テキスト追加
             frame = text_overlay.add_text(

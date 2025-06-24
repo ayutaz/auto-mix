@@ -6,10 +6,18 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
-import cv2
-import moviepy.editor as mpe
 import numpy as np
 from numpy.typing import NDArray
+
+try:
+    import cv2
+except ImportError:
+    cv2 = None
+
+try:
+    import moviepy.editor as mpe
+except ImportError:
+    mpe = None
 
 
 @dataclass
