@@ -665,6 +665,11 @@ class TestDisplayAnalysisResults:
 class TestErrorHandling:
     """エラーハンドリングのテスト"""
 
+    @pytest.fixture
+    def runner(self):
+        """"クリック CLIテストランナー"""
+        return CliRunner()
+
     def test_main_exception_handling(self, runner, sample_audio_files):
         """メイン関数の例外処理テスト"""
         vocal_path, bgm_path = sample_audio_files
@@ -697,6 +702,11 @@ class TestErrorHandling:
 
 class TestIntegration:
     """統合テスト"""
+
+    @pytest.fixture
+    def runner(self):
+        """"クリック CLIテストランナー"""
+        return CliRunner()
 
     def test_full_pipeline_audio_only(self, runner):
         """音声のみの完全なパイプラインテスト"""
