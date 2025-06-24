@@ -54,6 +54,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg libsndfile1
+          # OpenCV dependencies
+          sudo apt-get install -y libglib2.0-0 libsm6 libxext6 libxrender-dev libgomp1
       
       - name: Install system dependencies (macOS)
         if: runner.os == 'macOS'
@@ -100,6 +102,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg libsndfile1
+          # OpenCV dependencies
+          sudo apt-get install -y libglib2.0-0 libsm6 libxext6 libxrender-dev libgomp1
       
       - name: Install uv
         uses: astral-sh/setup-uv@v4

@@ -12,7 +12,8 @@ import time
 from automix.core.audio_loader import AudioLoader
 from automix.core.analyzer import AudioAnalyzer
 from automix.core.processor import MixProcessor
-from automix.core.effects import ReverbProcessor, CompressorProcessor
+from automix.core.effects import ReverbProcessor
+from automix.core.processor import CompressorProcessor
 from automix.core.mastering import MasteringProcessor
 from automix.video.visualizer import VisualizerComposite
 from automix.video.encoder import VideoEncoder, VideoSettings
