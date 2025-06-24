@@ -1,0 +1,24 @@
+# カスタム設定ファイルの例
+audio:
+  target_lufs: -16          # Spotify推奨
+  sample_rate: 48000        # 高品質
+  reverb:
+    type: plate
+    mix: 0.25
+    room_size: 0.6
+  compressor:
+    threshold: -18
+    ratio: 3
+    attack: 5
+    release: 50
+  eq_preset: warm
+
+video:
+  resolution: 1920x1080
+  fps: 60                   # 滑らかな動き
+  visualizer: spectrum
+  background: gradient
+  text_style:
+    font_family: system
+    size: 64
+    color: "#FFFFFF"

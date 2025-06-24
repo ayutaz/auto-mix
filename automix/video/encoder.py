@@ -1,7 +1,7 @@
 """
 動画エンコードモジュール
 """
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Tuple
 from pathlib import Path
 import numpy as np
 import cv2
@@ -10,6 +10,7 @@ from numpy.typing import NDArray
 from dataclasses import dataclass
 import tempfile
 import shutil
+import subprocess
 
 
 @dataclass

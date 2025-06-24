@@ -65,14 +65,20 @@ class TestAudioLoader:
     
     def test_load_mp3_file(self):
         """MP3ファイルの読み込みテスト（モック使用）"""
-        with patch('automix.core.audio_loader.librosa.load') as mock_load:
-            mock_load.return_value = (np.zeros(44100), 44100)
-            
-            loader = AudioLoader()
-            audio_file = loader.load(Path("test.mp3"))
-            
-            assert isinstance(audio_file, AudioFile)
-            mock_load.assert_called_once()
+        with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as f:
+            temp_file = Path(f.name)
+        
+        try:
+            with patch('automix.core.audio_loader.librosa.load') as mock_load:
+                mock_load.return_value = (np.zeros(44100), 44100)
+                
+                loader = AudioLoader()
+                audio_file = loader.load(temp_file)
+                
+                assert isinstance(audio_file, AudioFile)
+                mock_load.assert_called_once()
+        finally:
+            temp_file.unlink(missing_ok=True)
     
     def test_load_nonexistent_file(self):
         """存在しないファイルの読み込みテスト"""
@@ -82,9 +88,15 @@ class TestAudioLoader:
     
     def test_load_unsupported_format(self):
         """サポートされていない形式のテスト"""
-        loader = AudioLoader()
-        with pytest.raises(UnsupportedFormatError):
-            loader.load(Path("test.xyz"))
+        with tempfile.NamedTemporaryFile(suffix='.xyz', delete=False) as f:
+            temp_file = Path(f.name)
+        
+        try:
+            loader = AudioLoader()
+            with pytest.raises(UnsupportedFormatError):
+                loader.load(temp_file)
+        finally:
+            temp_file.unlink(missing_ok=True)
     
     def test_resample_audio(self, temp_audio_file):
         """リサンプリング機能のテスト"""
