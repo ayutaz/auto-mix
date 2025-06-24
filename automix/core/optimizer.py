@@ -294,12 +294,12 @@ class MemoryOptimizedProcessor:
 
 def optimize_for_gpu() -> bool:
     """GPU最適化が可能か確認し、有効化を試みる"""
-    try:
-        import cupy as cp  # noqa: F401
+    import importlib.util
 
-        # CuPyが利用可能
+    spec = importlib.util.find_spec("cupy")
+    if spec is not None:
         print("GPU acceleration available via CuPy")
         return True
-    except ImportError:
+    else:
         print("GPU acceleration not available (CuPy not installed)")
         return False
