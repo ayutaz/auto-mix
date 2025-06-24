@@ -3,10 +3,20 @@ AutoMix GUI インターフェース
 """
 import json
 import threading
-import tkinter as tk
 from pathlib import Path
-from tkinter import filedialog, messagebox, ttk
 from typing import Optional
+
+try:
+    import tkinter as tk
+    from tkinter import filedialog, messagebox, ttk
+except ImportError as e:
+    import sys
+    print("Error: tkinter is not installed.", file=sys.stderr)
+    print("\nTo install tkinter:", file=sys.stderr)
+    print("  macOS (Homebrew): brew install python-tk@3.11", file=sys.stderr)
+    print("  Ubuntu/Debian: sudo apt-get install python3-tk", file=sys.stderr)
+    print("  Windows: tkinter is usually included with Python", file=sys.stderr)
+    sys.exit(1)
 
 from .cli import process_audio
 from .core.optimizer import MemoryOptimizedProcessor

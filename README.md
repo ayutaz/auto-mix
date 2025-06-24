@@ -154,6 +154,28 @@ uv run ruff check .
 uv run mypy automix
 ```
 
+## GUI インターフェース
+
+GUIインターフェースを使用するには、tkinterが必要です。
+
+### macOS (Homebrew Python)
+```bash
+brew install python-tk@3.11
+```
+
+### Ubuntu/Debian
+```bash
+sudo apt-get install python3-tk
+```
+
+### Windows
+Windowsでは通常、tkinterはPythonに含まれています。
+
+### GUI起動方法
+```bash
+python -m automix.gui
+```
+
 ## トラブルシューティング
 
 ### FFmpegが見つからない
