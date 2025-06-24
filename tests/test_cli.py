@@ -667,8 +667,24 @@ class TestErrorHandling:
 
     @pytest.fixture
     def runner(self):
-        """"クリック CLIテストランナー"""
+        """ "クリック CLIテストランナー"""
         return CliRunner()
+
+    @pytest.fixture
+    def sample_audio_files(self):
+        """テスト用音声ファイルを作成"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # ボーカルファイル
+            vocal_path = Path(tmpdir) / "vocal.wav"
+            vocal_data = np.sin(2 * np.pi * 440 * np.linspace(0, 1, 44100))
+            sf.write(vocal_path, vocal_data, 44100)
+
+            # BGMファイル
+            bgm_path = Path(tmpdir) / "bgm.wav"
+            bgm_data = np.sin(2 * np.pi * 220 * np.linspace(0, 1, 44100))
+            sf.write(bgm_path, bgm_data, 44100)
+
+            yield vocal_path, bgm_path
 
     def test_main_exception_handling(self, runner, sample_audio_files):
         """メイン関数の例外処理テスト"""
@@ -705,7 +721,7 @@ class TestIntegration:
 
     @pytest.fixture
     def runner(self):
-        """"クリック CLIテストランナー"""
+        """ "クリック CLIテストランナー"""
         return CliRunner()
 
     def test_full_pipeline_audio_only(self, runner):

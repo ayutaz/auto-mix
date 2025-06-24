@@ -188,7 +188,7 @@ class VideoEncoder:
 
         if cv2 is None:
             raise RuntimeError("OpenCV (cv2) is not installed. Please install opencv-python.")
-        
+
         for i, frame in enumerate(frames_list):
             filename = pattern % i
             cv2.imwrite(filename, frame)

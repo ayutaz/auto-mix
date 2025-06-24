@@ -84,7 +84,7 @@ class TextOverlay:
         """
         if cv2 is None:
             return frame
-        
+
         if style is None:
             style = TextStyle(font_size=self.font_size, font_color=self.font_color)
 

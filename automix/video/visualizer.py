@@ -63,7 +63,7 @@ class WaveformVisualizer:
         """
         # 背景を作成
         frame = np.zeros((self.height, self.width, 3), dtype=np.uint8)
-        
+
         if cv2 is None:
             return frame
 
@@ -248,10 +248,10 @@ class SpectrumVisualizer:
 
         # 描画
         frame = np.zeros((self.height, self.width, 3), dtype=np.uint8)
-        
+
         if cv2 is None:
             return frame
-        
+
         self._draw_bars(frame, spectrum)
 
         return frame
@@ -381,7 +381,7 @@ class ParticleVisualizer:
             NDArray[np.uint8]: 描画された画像 (H, W, 3)
         """
         frame = np.zeros((self.height, self.width, 3), dtype=np.uint8)
-        
+
         if cv2 is None:
             return frame
 
@@ -506,7 +506,7 @@ class VisualizerComposite:
         # cv2が使えない場合は空のフレームを返す
         if cv2 is None:
             return np.zeros((self.height, self.width, 3), dtype=np.uint8)
-        
+
         # 各要素を描画
         waveform_frame = self.waveform.render_frame(audio_data)
         spectrum_frame = self.spectrum.render_frame(audio_data)
