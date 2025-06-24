@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoMix - Auto Mixing Tool</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>🎵 AutoMix</h1>
+            <p>Auto Mixing and Video Generation for Vocal Covers</p>
+        </header>
+
+        <main>
+            <!-- File Upload Section -->
+            <section class="upload-section">
+                <h2>Files</h2>
+                
+                <div class="file-input-group">
+                    <label for="vocal-input">
+                        <span class="label-text">Vocal File</span>
+                        <div class="file-drop-zone" id="vocal-drop">
+                            <input type="file" id="vocal-input" accept=".wav,.mp3,.m4a,.flac,.ogg">
+                            <p class="drop-text">Drop vocal file here or click to browse</p>
+                            <p class="file-name" id="vocal-filename"></p>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="file-input-group">
+                    <label for="bgm-input">
+                        <span class="label-text">BGM File</span>
+                        <div class="file-drop-zone" id="bgm-drop">
+                            <input type="file" id="bgm-input" accept=".wav,.mp3,.m4a,.flac,.ogg">
+                            <p class="drop-text">Drop BGM file here or click to browse</p>
+                            <p class="file-name" id="bgm-filename"></p>
+                        </div>
+                    </label>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section class="settings-section">
+                <h2>Settings</h2>
+                
+                <div class="settings-grid">
+                    <div class="setting-group">
+                        <label for="preset">Preset</label>
+                        <select id="preset">
+                            <option value="pop">Pop</option>
+                            <option value="rock">Rock</option>
+                            <option value="ballad">Ballad</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-group">
+                        <label for="vocal-volume">Vocal Volume (dB)</label>
+                        <div class="slider-container">
+                            <input type="range" id="vocal-volume" min="-20" max="20" value="0" step="0.5">
+                            <span class="slider-value" id="vocal-volume-value">0</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <label for="bgm-volume">BGM Volume (dB)</label>
+                        <div class="slider-container">
+                            <input type="range" id="bgm-volume" min="-20" max="20" value="0" step="0.5">
+                            <span class="slider-value" id="bgm-volume-value">0</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <label for="reverb">Reverb</label>
+                        <select id="reverb">
+                            <option value="">None</option>
+                            <option value="hall">Hall</option>
+                            <option value="room">Room</option>
+                            <option value="plate">Plate</option>
+                            <option value="spring">Spring</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-group">
+                        <label for="video-template">Video Template</label>
+                        <select id="video-template">
+                            <option value="modern">Modern</option>
+                            <option value="classic">Classic</option>
+                            <option value="minimal">Minimal</option>
+                            <option value="particle">Particle</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-group checkbox-group">
+                        <label>
+                            <input type="checkbox" id="audio-only">
+                            <span>Audio Only (No Video)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Performance Options -->
+                <details class="advanced-settings">
+                    <summary>Performance Options</summary>
+                    <div class="settings-grid">
+                        <div class="setting-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="chunk-processing">
+                                <span>Chunk Processing (for large files)</span>
+                            </label>
+                        </div>
+                        <div class="setting-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="streaming">
+                                <span>Streaming Mode (low memory)</span>
+                            </label>
+                        </div>
+                        <div class="setting-group checkbox-group">
+                            <label>
+                                <input type="checkbox" id="preview-mode">
+                                <span>Preview Mode (30 seconds only)</span>
+                            </label>
+                        </div>
+                    </div>
+                </details>
+
+                <!-- Plugins -->
+                <details class="advanced-settings">
+                    <summary>Plugins</summary>
+                    <div id="plugins-container" class="plugins-grid">
+                        <!-- Plugins will be loaded here -->
+                    </div>
+                </details>
+            </section>
+
+            <!-- Process Section -->
+            <section class="process-section">
+                <button id="process-btn" class="process-button">Process</button>
+                
+                <div class="progress-container" id="progress-container" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <p class="progress-text" id="progress-text">Processing...</p>
+                </div>
+
+                <div class="result-container" id="result-container" style="display: none;">
+                    <h3>✅ Processing Complete!</h3>
+                    <button id="download-btn" class="download-button">Download Result</button>
+                </div>
+
+                <div class="error-container" id="error-container" style="display: none;">
+                    <h3>❌ Error</h3>
+                    <p id="error-message"></p>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>AutoMix © 2024 | <a href="https://github.com/ayutaz/auto-mix" target="_blank">GitHub</a></p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

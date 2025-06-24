@@ -1,0 +1,3 @@
+"""
+AutoMix Web Interface
+"""

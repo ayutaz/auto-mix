@@ -156,22 +156,48 @@ uv run mypy automix
 
 ## GUI インターフェース
 
-GUIインターフェースを使用するには、tkinterが必要です。
+AutoMixには2種類のGUIインターフェースがあります。
 
-### macOS (Homebrew Python)
+### Web インターフェース（推奨）
+
+モダンなWebベースのインターフェースです。ブラウザで操作できます。
+
+```bash
+# Web UIを起動（自動的にブラウザが開きます）
+automix-web
+
+# オプション付きで起動
+automix-web --host 0.0.0.0 --port 8080  # 別のホスト/ポートで起動
+automix-web --no-browser                  # ブラウザを自動で開かない
+```
+
+Web UIの特徴：
+- 📱 レスポンシブデザイン（モバイル対応）
+- 🎨 モダンなダークテーマUI
+- 📤 ドラッグ&ドロップでファイルアップロード
+- ⚡ リアルタイムプログレス表示
+- 🔌 プラグイン管理機能
+
+### デスクトップ GUI（tkinter）
+
+従来のデスクトップアプリケーションスタイルのGUIです。
+
+tkinterのインストール（必要な場合）：
+
+#### macOS (Homebrew Python)
 ```bash
 brew install python-tk@3.11
 ```
 
-### Ubuntu/Debian
+#### Ubuntu/Debian
 ```bash
 sudo apt-get install python3-tk
 ```
 
-### Windows
+#### Windows
 Windowsでは通常、tkinterはPythonに含まれています。
 
-### GUI起動方法
+起動方法：
 ```bash
 python -m automix.gui
 ```
