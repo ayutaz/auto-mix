@@ -246,7 +246,7 @@ class AudioAnalyzer:
             tempo_stability = None
 
         return TempoAnalysis(
-            tempo=float(tempo),
+            tempo=float(tempo[0]) if isinstance(tempo, np.ndarray) else float(tempo),
             beats=beat_times,
             downbeats=None,  # TODO: ダウンビート検出の実装
             tempo_stability=tempo_stability,

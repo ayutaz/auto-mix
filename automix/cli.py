@@ -138,15 +138,23 @@ def main(
     if preset:
         settings.update(get_preset_settings(preset))
 
-    # コマンドライン引数で上書き
-    settings["vocal_volume"] = vocal_volume
-    settings["bgm_volume"] = bgm_volume
+    # コマンドライン引数で上書き（デフォルト値以外の場合のみ）
+    # Click doesn't provide a way to check if an option was explicitly provided,
+    # so we check if the value is different from the default
+    if vocal_volume != 0.0 or preset is None:
+        settings["vocal_volume"] = vocal_volume
+    if bgm_volume != 0.0 or preset is None:
+        settings["bgm_volume"] = bgm_volume
     settings["audio_only"] = audio_only
 
     if reverb:
         settings["reverb"] = reverb
     if denoise:
         settings["denoise"] = denoise
+    if lyrics:
+        settings["lyrics"] = lyrics
+    if video_template:
+        settings["video_template"] = video_template
 
     # パフォーマンス最適化設定
     if chunk_processing:

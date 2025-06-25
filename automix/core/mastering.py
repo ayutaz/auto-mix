@@ -124,7 +124,7 @@ class LimiterProcessor:
         """
         # ディレイバッファの初期化
         if self.delay_buffer is None:
-            self.delay_buffer = np.zeros(self.lookahead_samples)
+            self.delay_buffer = np.zeros(max(1, self.lookahead_samples))
 
         output = np.zeros_like(audio)
         envelope = 0.0
@@ -134,7 +134,10 @@ class LimiterProcessor:
 
         for i in range(len(audio)):
             # ルックアヘッド区間の最大値
-            lookahead_max = np.max(np.abs(padded_audio[i : i + self.lookahead_samples]))
+            if self.lookahead_samples > 0:
+                lookahead_max = np.max(np.abs(padded_audio[i : i + self.lookahead_samples]))
+            else:
+                lookahead_max = np.abs(padded_audio[i])
 
             # エンベロープ追従
             if lookahead_max > envelope:
@@ -149,11 +152,13 @@ class LimiterProcessor:
                 gain = 1.0
 
             # ディレイバッファから出力
-            output[i] = self.delay_buffer[0] * gain
-
-            # ディレイバッファ更新
-            self.delay_buffer = np.roll(self.delay_buffer, -1)
-            self.delay_buffer[-1] = audio[i]
+            if self.lookahead_samples > 0:
+                output[i] = self.delay_buffer[0] * gain
+                # ディレイバッファ更新
+                self.delay_buffer = np.roll(self.delay_buffer, -1)
+                self.delay_buffer[-1] = audio[i]
+            else:
+                output[i] = audio[i] * gain
 
         return output
 
@@ -220,7 +225,15 @@ class MultibandCompressor:
 
     def _split_bands(self, audio: NDArray[np.float32]) -> list[NDArray[np.float32]]:
         """周波数帯域に分割"""
+        # 空の音声の場合は空の帯域リストを返す
+        if len(audio) == 0:
+            return [np.array([]) for _ in range(self.num_bands)]
+
         bands = []
+
+        # 単一帯域の場合はフィルタリングなし
+        if self.num_bands == 1:
+            return [audio.copy()]
 
         # Linkwitz-Riley フィルタで帯域分割
         for i in range(self.num_bands):
@@ -318,6 +331,10 @@ class LoudnessNormalizer:
         Returns:
             NDArray[np.float32]: 正規化後の音声
         """
+        # 空の音声の場合はそのまま返す
+        if len(audio) == 0:
+            return audio
+
         # 現在のLUFSを測定
         current_lufs = self.measure_integrated_lufs(audio)
 
@@ -346,6 +363,10 @@ class LoudnessNormalizer:
         Returns:
             float: LUFS値
         """
+        # 空の音声の場合は-70.0 LUFS（無音）を返す
+        if len(audio) == 0:
+            return -70.0
+
         # K-weighting pre-filter
         # High shelf at 1500 Hz, +4 dB
         sos1 = self._high_shelf_filter(1500, 4)
