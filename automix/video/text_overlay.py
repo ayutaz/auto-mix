@@ -215,7 +215,7 @@ class TextOverlay:
         """テキストを折り返し"""
         words = text.split(" ")
         lines = []
-        current_line = []
+        current_line: list[str] = []
 
         font_scale = style.font_size / 30.0
 
@@ -316,7 +316,8 @@ class LyricsRenderer:
         """指定時刻の歌詞を取得"""
         for subtitle in self.subtitles:
             if subtitle["start"] <= time_seconds <= subtitle["end"]:
-                return subtitle["text"]
+                text = subtitle["text"]
+                return str(text) if text is not None else None
         return None
 
     def render_karaoke(

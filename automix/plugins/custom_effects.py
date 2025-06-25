@@ -142,7 +142,7 @@ class VocalEnhancerPlugin(AudioEffectPlugin):
             b, a = self._design_high_shelf(freq, q, gain_db, sample_rate)
             result = signal.filtfilt(b, a, result)
 
-        return result
+        return result.astype(np.float32)
 
     def _design_peaking_eq(self, freq: float, q: float, gain_db: float, fs: float):
         """ピーキングEQフィルタを設計"""
@@ -354,4 +354,4 @@ class HarmonicExciterPlugin(AudioEffectPlugin):
         if max_val > 1.0:
             result = result / max_val * 0.95
 
-        return result
+        return result.astype(np.float32)

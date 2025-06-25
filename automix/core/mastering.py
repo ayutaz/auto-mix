@@ -443,7 +443,7 @@ class FinalEQ:
         """
         self.sample_rate = sample_rate
         self.linear_phase = linear_phase
-        self.bands: list[dict[str, float]] = []
+        self.bands: list[dict[str, Any]] = []
 
     def add_bell(self, freq: float, gain_db: float, q: float) -> None:
         """ベル型EQを追加"""
@@ -473,8 +473,9 @@ class FinalEQ:
             if band["type"] == "bell":
                 processed = self._apply_bell(processed, band["freq"], band["gain_db"], band["q"])
             elif band["type"] in ["low_shelf", "high_shelf"]:
+                shelf_type = str(band["type"])
                 processed = self._apply_shelf(
-                    processed, band["freq"], band["gain_db"], band["type"]
+                    processed, float(band["freq"]), float(band["gain_db"]), shelf_type
                 )
 
         return processed
