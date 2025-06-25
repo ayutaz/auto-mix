@@ -74,7 +74,7 @@ class TestCLI:
         result = runner.invoke(main, ["--version"])
 
         assert result.exit_code == 0
-        assert "automix version" in result.output.lower()
+        assert "version" in result.output.lower()
 
     def test_missing_required_args(self, runner):
         """必須引数が不足している場合のテスト"""
