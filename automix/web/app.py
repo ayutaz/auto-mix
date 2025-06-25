@@ -183,10 +183,10 @@ def process() -> Any:
                                 * 100
                             )
                             processing_status["progress"] = int(total_progress)
-                
+
                 def __enter__(self) -> "WebProgress":
                     return self
-                
+
                 def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
                     pass
 

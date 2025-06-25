@@ -89,6 +89,10 @@ class WaveformVisualizer:
         height = y_end - y_start
         mid_y = y_start + height // 2
 
+        # 空の音声データの場合は何も描画しない
+        if len(audio) == 0:
+            return
+
         # サンプル数をフレーム幅に合わせる
         if len(audio) > self.width:
             # ダウンサンプリング
