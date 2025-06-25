@@ -205,7 +205,7 @@ class DelayProcessor:
 
     @classmethod
     def from_tempo(
-        cls, sample_rate: int, bpm: float, note_division: str, **kwargs
+        cls, sample_rate: int, bpm: float, note_division: str, **kwargs: Any
     ) -> "DelayProcessor":
         """
         テンポ同期ディレイを作成

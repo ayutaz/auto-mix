@@ -102,7 +102,7 @@ def upload_file() -> Any:
     file = request.files["file"]
     file_type = request.form.get("type", "unknown")
 
-    if file.filename == "":
+    if file.filename == "" or file.filename is None:
         return jsonify({"error": "No selected file"}), 400
 
     if file and allowed_file(file.filename):

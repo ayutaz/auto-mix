@@ -136,7 +136,7 @@ class VocalEnhancerPlugin(AudioEffectPlugin):
 
         # エア (10kHz+)
         if self.air > 0:
-            freq = 12000
+            freq = 12000.0
             q = 0.7
             gain_db = self.air * 3  # 最大3dB
             b, a = self._design_high_shelf(freq, q, gain_db, sample_rate)
