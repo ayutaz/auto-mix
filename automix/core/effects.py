@@ -2,6 +2,8 @@
 エフェクト処理モジュール
 """
 
+from typing import Any
+
 import numpy as np
 import scipy.signal
 from numpy.typing import NDArray
