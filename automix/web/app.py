@@ -161,33 +161,40 @@ def process() -> Any:
         processing_status["error"] = None
 
         try:
-            # Webプログレスクラス
+            # Webプログレスクラス（rich.Progressと互換性を持たせる）
             class WebProgress:
                 def __init__(self) -> None:
                     self.tasks: list[dict[str, Any]] = []
 
-                def add_task(self, description: str, total: int) -> int:
+                def add_task(self, description: str, total: int = 100, **kwargs: Any) -> int:
                     task_id = len(self.tasks)
                     self.tasks.append({"description": description, "total": total, "completed": 0})
                     processing_status["message"] = description
                     return task_id
 
-                def update(self, task_id: int, advance: int) -> None:
+                def update(self, task_id: int, advance: int = 1, **kwargs: Any) -> None:
                     if 0 <= task_id < len(self.tasks):
                         self.tasks[task_id]["completed"] += advance
                         # 全体の進捗を計算
-                        total_progress = (
-                            sum(t["completed"] / t["total"] for t in self.tasks)
-                            / len(self.tasks)
-                            * 100
-                        )
-                        processing_status["progress"] = int(total_progress)
+                        if self.tasks:
+                            total_progress = (
+                                sum(t["completed"] / t["total"] for t in self.tasks)
+                                / len(self.tasks)
+                                * 100
+                            )
+                            processing_status["progress"] = int(total_progress)
+                
+                def __enter__(self) -> "WebProgress":
+                    return self
+                
+                def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+                    pass
 
             progress = WebProgress()
 
-            # 処理を実行
+            # 処理を実行（型を無視）
             process_audio(
-                Path(vocal_path), Path(bgm_path), output_path, settings, progress, verbose=False
+                Path(vocal_path), Path(bgm_path), output_path, settings, progress, verbose=False  # type: ignore[arg-type]
             )
 
             processing_status["progress"] = 100
