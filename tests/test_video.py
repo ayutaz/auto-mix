@@ -12,6 +12,7 @@ import pytest
 # OpenCVのインポート
 try:
     import cv2
+
     HAS_CV2 = True
     print(f"DEBUG: cv2 imported successfully in test_video.py, version: {cv2.__version__}")
 except ImportError as e:

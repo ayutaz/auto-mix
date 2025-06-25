@@ -144,7 +144,9 @@ class VocalEnhancerPlugin(AudioEffectPlugin):
 
         return result.astype(np.float32)
 
-    def _design_peaking_eq(self, freq: float, q: float, gain_db: float, fs: float) -> tuple[list[float], list[float]]:
+    def _design_peaking_eq(
+        self, freq: float, q: float, gain_db: float, fs: float
+    ) -> tuple[list[float], list[float]]:
         """ピーキングEQフィルタを設計"""
         w0 = 2 * np.pi * freq / fs
         A = 10 ** (gain_db / 40)
@@ -159,7 +161,9 @@ class VocalEnhancerPlugin(AudioEffectPlugin):
 
         return [b0 / a0, b1 / a0, b2 / a0], [1, a1 / a0, a2 / a0]
 
-    def _design_high_shelf(self, freq: float, q: float, gain_db: float, fs: float) -> tuple[list[float], list[float]]:
+    def _design_high_shelf(
+        self, freq: float, q: float, gain_db: float, fs: float
+    ) -> tuple[list[float], list[float]]:
         """ハイシェルフフィルタを設計"""
         w0 = 2 * np.pi * freq / fs
         A = 10 ** (gain_db / 40)

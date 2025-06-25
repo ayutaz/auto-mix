@@ -58,10 +58,7 @@ class MasteringProcessor:
             NDArray[np.float32]: マスタリング後の音声
         """
         if settings is None:
-            settings = MasteringSettings(
-                target_lufs=self.target_lufs,
-                ceiling_db=self.ceiling_db
-            )
+            settings = MasteringSettings(target_lufs=self.target_lufs, ceiling_db=self.ceiling_db)
 
         # settingsから値を更新
         if settings.target_lufs != self.target_lufs:

@@ -4,6 +4,7 @@
 
 import tempfile
 import time
+from contextlib import suppress
 from pathlib import Path
 from unittest.mock import patch
 
@@ -103,17 +104,14 @@ class TestEndToEndWorkflow:
             # 出力ファイルに保存
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
                 output_path = Path(f.name)
-            
+
             # ファイルハンドルを閉じてから書き込み
             sf.write(str(output_path), mastered, sr)
             assert output_path.exists()
-            
+
             # Windows環境でのファイル削除エラーを回避
-            try:
+            with suppress(PermissionError):
                 output_path.unlink()
-            except PermissionError:
-                # Windows環境でファイルが使用中の場合は無視
-                pass
 
         finally:
             # クリーンアップ

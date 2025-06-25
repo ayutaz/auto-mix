@@ -330,7 +330,9 @@ class SpectrumVisualizer:
                 color = (0, 255, 0)
 
             if cv2 is not None:
-                cv2.rectangle(frame, (x, y), (x + bar_width - bar_spacing * 2, self.height), color, -1)
+                cv2.rectangle(
+                    frame, (x, y), (x + bar_width - bar_spacing * 2, self.height), color, -1
+                )
 
 
 class ParticleVisualizer:

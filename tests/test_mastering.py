@@ -134,13 +134,13 @@ class TestLimiterProcessor:
         # 両方とも閾値以下に制限されている（実装により多少のオーバーシュートを許容）
         assert np.max(limited_no_la) <= limiter_no_lookahead.threshold * 1.3
         assert np.max(limited_with_la) <= limiter_with_lookahead.threshold * 1.3
-        
+
         # ルックアヘッドありの方がよりスムーズな制限
         # （ピーク付近のサンプル数で比較）
         peak_idx = sr // 2
-        no_la_peak_region = limited_no_la[peak_idx-5:peak_idx+15]
-        with_la_peak_region = limited_with_la[peak_idx-5:peak_idx+15]
-        
+        no_la_peak_region = limited_no_la[peak_idx - 5 : peak_idx + 15]
+        with_la_peak_region = limited_with_la[peak_idx - 5 : peak_idx + 15]
+
         # ルックアヘッドありの方が滑らかな処理
         no_la_diff = np.diff(no_la_peak_region)
         with_la_diff = np.diff(with_la_peak_region)
