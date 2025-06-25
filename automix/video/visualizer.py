@@ -11,7 +11,7 @@ from numpy.typing import NDArray
 try:
     import cv2
 except ImportError:
-    cv2 = None
+    cv2 = None  # type: ignore
 
 
 @dataclass
@@ -124,6 +124,8 @@ class WaveformVisualizer:
         self, frame: NDArray[np.uint8], audio: NDArray[np.float32], mid_y: int, height: int
     ) -> None:
         """線形波形を描画"""
+        if cv2 is None:
+            return
         points = []
         for i in range(len(audio)):
             y = int(mid_y - audio[i] * height * 0.4)
@@ -136,6 +138,8 @@ class WaveformVisualizer:
         self, frame: NDArray[np.uint8], audio: NDArray[np.float32], mid_y: int, height: int
     ) -> None:
         """塗りつぶし波形を描画"""
+        if cv2 is None:
+            return
         for i in range(len(audio)):
             x = i * self.width // len(audio)
             y_offset = int(abs(audio[i]) * height * 0.4)
@@ -159,6 +163,8 @@ class WaveformVisualizer:
         points_top_array = np.array(points_top, np.int32)
         points_bottom_array = np.array(points_bottom, np.int32)
 
+        if cv2 is None:
+            return
         cv2.polylines(frame, [points_top_array], False, self.color, 2)
         cv2.polylines(frame, [points_bottom_array], False, self.color, 2)
 
@@ -179,6 +185,8 @@ class WaveformVisualizer:
             points_list.append([x, y])
 
         points_array = np.array(points_list, np.int32)
+        if cv2 is None:
+            return
         cv2.polylines(frame, [points_array], True, self.color, 2)
 
 
@@ -308,16 +316,21 @@ class SpectrumVisualizer:
             # 色を計算
             if self.color_scheme == "rainbow":
                 hue = int(i * 180 / self.bar_count)
-                color = cv2.cvtColor(
-                    np.array([[[hue, 255, 255]]], dtype=np.uint8), cv2.COLOR_HSV2BGR
-                )[0, 0].tolist()
+                if cv2 is not None:
+                    color = cv2.cvtColor(
+                        np.array([[[hue, 255, 255]]], dtype=np.uint8), cv2.COLOR_HSV2BGR
+                    )[0, 0].tolist()
+                else:
+                    # cv2がない場合は固定色
+                    color = (0, 255, 0)
             elif self.color_scheme == "gradient":
                 intensity = int(spectrum[i] * 255)
                 color = (intensity, intensity // 2, 255 - intensity)
             else:
                 color = (0, 255, 0)
 
-            cv2.rectangle(frame, (x, y), (x + bar_width - bar_spacing * 2, self.height), color, -1)
+            if cv2 is not None:
+                cv2.rectangle(frame, (x, y), (x + bar_width - bar_spacing * 2, self.height), color, -1)
 
 
 class ParticleVisualizer:
@@ -420,7 +433,7 @@ class ParticleVisualizer:
             vy = -audio_level * 20 - np.random.uniform(5, 10)
 
             # 色（周波数データに基づく）
-            if frequency_data is not None and len(frequency_data) > 0:
+            if frequency_data is not None and len(frequency_data) > 0 and cv2 is not None:
                 freq_idx = int(np.random.uniform(0, len(frequency_data)))
                 hue = int(frequency_data[freq_idx] * 180)
                 color_hsv = np.array([[[hue, 255, 255]]], dtype=np.uint8)
@@ -470,6 +483,8 @@ class ParticleVisualizer:
 
     def _draw_particles(self, frame: NDArray[np.uint8]) -> None:
         """パーティクルを描画"""
+        if cv2 is None:
+            return
         for p in self.particles:
             alpha = p["life"]
             color = [int(c * alpha) for c in p["color"]]

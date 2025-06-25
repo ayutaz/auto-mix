@@ -102,10 +102,18 @@ class TestEndToEndWorkflow:
 
             # 出力ファイルに保存
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
-                sf.write(f.name, mastered, sr)
                 output_path = Path(f.name)
-                assert output_path.exists()
+            
+            # ファイルハンドルを閉じてから書き込み
+            sf.write(str(output_path), mastered, sr)
+            assert output_path.exists()
+            
+            # Windows環境でのファイル削除エラーを回避
+            try:
                 output_path.unlink()
+            except PermissionError:
+                # Windows環境でファイルが使用中の場合は無視
+                pass
 
         finally:
             # クリーンアップ

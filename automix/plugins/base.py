@@ -142,7 +142,7 @@ class PluginManager:
                 ):
                     # プラグインインスタンスを作成して登録
                     try:
-                        plugin = obj()
+                        plugin = obj(name=obj.__name__)
                         self.register_plugin(plugin)
                     except TypeError:
                         # 抽象クラスの場合はスキップ

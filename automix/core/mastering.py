@@ -58,7 +58,18 @@ class MasteringProcessor:
             NDArray[np.float32]: マスタリング後の音声
         """
         if settings is None:
-            settings = MasteringSettings()
+            settings = MasteringSettings(
+                target_lufs=self.target_lufs,
+                ceiling_db=self.ceiling_db
+            )
+
+        # settingsから値を更新
+        if settings.target_lufs != self.target_lufs:
+            self.target_lufs = settings.target_lufs
+            self.normalizer = LoudnessNormalizer(self.sample_rate, settings.target_lufs)
+        if settings.ceiling_db != self.ceiling_db:
+            self.ceiling_db = settings.ceiling_db
+            self.limiter = LimiterProcessor(self.sample_rate, settings.ceiling_db)
 
         processed = audio.copy()
 

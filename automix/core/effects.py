@@ -139,6 +139,10 @@ class DelayProcessor:
         Returns:
             NDArray[np.float32]: ディレイ適用後の音声
         """
+        # ディレイサンプルが0の場合は元の音声とミックスのみ
+        if self.delay_samples == 0:
+            return audio * (1.0 + self.mix)
+        
         # ディレイバッファの初期化
         if self.delay_buffer is None or len(self.delay_buffer) != self.delay_samples:
             self.delay_buffer = np.zeros(self.delay_samples).astype(np.float32)
@@ -197,7 +201,7 @@ class DelayProcessor:
             buffer = np.roll(buffer, -1)
             buffer[-1] = audio[i] + delayed * feedback_scale
 
-        return output
+        return output.astype(np.float32)
 
     @classmethod
     def from_tempo(

@@ -9,13 +9,15 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
+# OpenCVのインポート
 try:
     import cv2
-except ImportError:
+    HAS_CV2 = True
+    print(f"DEBUG: cv2 imported successfully in test_video.py, version: {cv2.__version__}")
+except ImportError as e:
+    print(f"DEBUG: Failed to import cv2 in test_video.py: {e}")
     cv2 = None
-
-# cv2が利用できない場合はテストをスキップ
-pytestmark = pytest.mark.skipif(cv2 is None, reason="OpenCV (cv2) not installed")
+    HAS_CV2 = False
 
 from automix.video.encoder import (  # noqa: E402
     CodecOptions,
@@ -69,6 +71,11 @@ class TestWaveformVisualizer:
 
         assert frame.shape == (1080, 1920, 3)
         assert frame.dtype == np.uint8
+        # デバッグ情報
+        print(f"Frame data shape: {frame_data.shape}")
+        print(f"Frame data range: [{np.min(frame_data)}, {np.max(frame_data)}]")
+        print(f"Frame max value: {np.max(frame)}")
+        print(f"cv2 available: {cv2 is not None}")
         assert np.any(frame > 0)  # 何か描画されている
 
     def test_waveform_styles(self, sample_waveform):

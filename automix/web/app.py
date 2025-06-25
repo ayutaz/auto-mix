@@ -61,7 +61,10 @@ def init_plugins() -> None:
 @app.route("/")
 def index() -> Any:
     """メインページを返す"""
-    return send_from_directory(app.static_folder, "index.html")
+    if app.static_folder is not None:
+        return send_from_directory(app.static_folder, "index.html")
+    else:
+        return "Static folder not configured", 500
 
 
 @app.route("/api/status")
@@ -122,7 +125,7 @@ def process() -> Any:
     if processing_status["is_processing"]:
         return jsonify({"error": "Already processing"}), 400
 
-    data = request.json
+    data = request.json or {}
 
     # 必須パラメータのチェック
     vocal_path = data.get("vocal_path")

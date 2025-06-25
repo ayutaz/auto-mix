@@ -283,7 +283,6 @@ class TestReverbProcessorEdgeCases:
 class TestDelayProcessorEdgeCases:
     """DelayProcessorのエッジケーステスト"""
 
-    @pytest.mark.skip(reason="Zero delay causes IndexError")
     def test_zero_delay(self):
         """ゼロディレイのテスト"""
         delay = DelayProcessor(delay_time_ms=0)

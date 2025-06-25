@@ -12,7 +12,7 @@ from numpy.typing import NDArray
 try:
     import cv2
 except ImportError:
-    cv2 = None
+    cv2 = None  # type: ignore
 
 
 @dataclass
@@ -114,7 +114,7 @@ class TextOverlay:
                 -1,
             )
 
-            result = cv2.addWeighted(result, 1 - bg_alpha, overlay, bg_alpha, 0)
+            result = cv2.addWeighted(result, 1 - bg_alpha, overlay, bg_alpha, 0).astype(np.uint8)
 
         # 影を描画
         if style.shadow_offset != (0, 0):
