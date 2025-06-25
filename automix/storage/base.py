@@ -202,4 +202,3 @@ def get_storage_backend() -> StorageBackend:
 
     # Default to local storage
     return LocalStorage()
-
