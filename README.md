@@ -76,6 +76,21 @@ automix \
   --video-template modern  # 動画テンプレート
 ```
 
+### パフォーマンス最適化オプション
+
+大容量ファイルを処理する場合の最適化オプション：
+
+```bash
+# チャンク処理（メモリ効率的）
+automix -v vocal.wav -b bgm.mp3 -o output.mp4 --chunk-processing
+
+# ストリーミング処理（非常に低いメモリ使用）
+automix -v vocal.wav -b bgm.mp3 -o output.mp4 --streaming
+
+# 30秒プレビューモード（テスト用）
+automix -v vocal.wav -b bgm.mp3 -o preview.mp4 --preview-mode
+```
+
 ### 設定ファイル
 
 `config.yaml`で詳細な設定が可能です：
@@ -87,15 +102,22 @@ audio:
   reverb:
     type: hall
     mix: 0.2
+    room_size: 0.8        # 部屋の大きさ (0.0-1.0)
   compressor:
     threshold: -20
     ratio: 4
+    attack: 5             # アタックタイム (ms)
+    release: 50           # リリースタイム (ms)
 
 video:
   resolution: 1920x1080
   fps: 30
   visualizer: spectrum
   background: gradient
+  text_style:
+    font_size: 48
+    font_color: [255, 255, 255]
+    position: top-center
 ```
 
 ## 機能詳細
@@ -120,7 +142,37 @@ video:
 - **Rock**: パワフルでバランスの取れたミックス
 - **Ballad**: 温かみのある、ボーカル重視のミックス
 
+### プラグインシステム
+
+AutoMixは拡張可能なプラグインシステムを搭載しています。
+
+#### 組み込みプラグイン
+
+- **PitchShift**: ピッチの変更
+- **NoiseGate**: ノイズゲート処理
+- **VintageWarmth**: ビンテージサウンド効果
+- **VocalEnhancer**: ボーカルの明瞭度向上
+- **StereoEnhancer**: ステレオイメージの拡大
+- **HarmonicExciter**: 倍音の追加
+
+#### プラグインの使用
+
+```bash
+# 利用可能なプラグインを表示
+automix --list-plugins
+
+# カスタムプラグインディレクトリを指定
+automix -v vocal.wav -b bgm.mp3 -o output.mp4 --plugin-dir ./my_plugins
+```
+
 ## 開発
+
+### 依存関係のインストール
+
+```bash
+# 開発用依存関係を含む全依存関係
+uv sync --dev
+```
 
 ### テスト実行
 
@@ -139,13 +191,16 @@ uv run pytest tests/test_audio_loader.py
 
 ```bash
 # フォーマットチェック
-uv run ruff format --check .
+uv run black --check automix tests
 
 # 自動フォーマット
-uv run ruff format .
+uv run black automix tests
 
 # リントチェック
-uv run ruff check .
+uv run ruff check automix tests
+
+# リント自動修正
+uv run ruff check --fix automix tests
 ```
 
 ### 型チェック
@@ -197,6 +252,7 @@ choco install ffmpeg
 - M4A
 - FLAC
 - OGG
+- AAC
 
 ### メモリ不足エラー
 
