@@ -2,6 +2,7 @@
 音声ビジュアライザーモジュール
 """
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
@@ -164,15 +165,15 @@ class WaveformVisualizer:
         center_y = mid_y
         radius = min(self.width, height) // 3
 
-        points = []
+        points_list = []
         for i in range(len(audio)):
             angle = 2 * np.pi * i / len(audio)
             r = radius + audio[i] * radius * 0.5
             x = int(center_x + r * np.cos(angle))
             y = int(center_y + r * np.sin(angle))
-            points.append([x, y])
+            points_list.append([x, y])
 
-        points = np.array(points, np.int32)
+        points = np.array(points_list, np.int32)
         cv2.polylines(frame, [points], True, self.color, 2)
 
 
@@ -243,7 +244,7 @@ class SpectrumVisualizer:
         # スムージング
         spectrum = (
             self.smoothing_factor * self.prev_spectrum + (1 - self.smoothing_factor) * spectrum
-        )
+        ).astype(np.float32)
         self.prev_spectrum = spectrum
 
         # 描画
@@ -349,7 +350,7 @@ class ParticleVisualizer:
         self.turbulence = turbulence
 
         # パーティクルの初期化
-        self.particles = []
+        self.particles: list[dict[str, Any]] = []
         self._init_particles()
 
     def _init_particles(self) -> None:

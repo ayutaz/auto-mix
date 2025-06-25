@@ -4,6 +4,7 @@ AutoMix Web アプリケーション
 import threading
 import webbrowser
 from pathlib import Path
+from typing import Any
 
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
@@ -41,12 +42,12 @@ plugin_manager = PluginManager()
 processing_status = {"is_processing": False, "progress": 0, "message": "Ready", "error": None}
 
 
-def allowed_file(filename):
+def allowed_file(filename: str) -> bool:
     """ファイルが許可された拡張子かチェック"""
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-def init_plugins():
+def init_plugins() -> None:
     """プラグインを初期化"""
     plugin_manager.register_plugin(PitchShiftPlugin())
     plugin_manager.register_plugin(NoiseGatePlugin())
@@ -57,19 +58,19 @@ def init_plugins():
 
 
 @app.route("/")
-def index():
+def index() -> Any:
     """メインページを返す"""
     return send_from_directory(app.static_folder, "index.html")
 
 
 @app.route("/api/status")
-def get_status():
+def get_status() -> Any:
     """処理状態を取得"""
     return jsonify(processing_status)
 
 
 @app.route("/api/plugins")
-def get_plugins():
+def get_plugins() -> Any:
     """利用可能なプラグインリストを取得"""
     plugins = []
     for plugin_info in plugin_manager.list_plugins():
@@ -89,7 +90,7 @@ def get_plugins():
 
 
 @app.route("/api/upload", methods=["POST"])
-def upload_file():
+def upload_file() -> Any:
     """ファイルをアップロード"""
     if "file" not in request.files:
         return jsonify({"error": "No file part"}), 400
@@ -113,7 +114,7 @@ def upload_file():
 
 
 @app.route("/api/process", methods=["POST"])
-def process():
+def process() -> Any:
     """音声処理を実行"""
     global processing_status
 
@@ -151,7 +152,7 @@ def process():
     }
 
     # バックグラウンドで処理を実行
-    def process_thread():
+    def process_thread() -> None:
         global processing_status
         processing_status["is_processing"] = True
         processing_status["progress"] = 0
@@ -161,16 +162,16 @@ def process():
         try:
             # Webプログレスクラス
             class WebProgress:
-                def __init__(self):
-                    self.tasks = []
+                def __init__(self) -> None:
+                    self.tasks: list[dict[str, Any]] = []
 
-                def add_task(self, description, total):
+                def add_task(self, description: str, total: int) -> int:
                     task_id = len(self.tasks)
                     self.tasks.append({"description": description, "total": total, "completed": 0})
                     processing_status["message"] = description
                     return task_id
 
-                def update(self, task_id, advance):
+                def update(self, task_id: int, advance: int) -> None:
                     if 0 <= task_id < len(self.tasks):
                         self.tasks[task_id]["completed"] += advance
                         # 全体の進捗を計算
@@ -207,7 +208,7 @@ def process():
 
 
 @app.route("/api/download/<filename>")
-def download_file(filename):
+def download_file(filename: str) -> Any:
     """処理済みファイルをダウンロード"""
     try:
         return send_from_directory(app.config["OUTPUT_FOLDER"], filename, as_attachment=True)
@@ -216,7 +217,7 @@ def download_file(filename):
 
 
 @app.route("/api/presets")
-def get_presets():
+def get_presets() -> Any:
     """利用可能なプリセットを取得"""
     presets = [
         {"id": "pop", "name": "Pop", "description": "Bright and vocal-forward mix"},
@@ -226,13 +227,13 @@ def get_presets():
     return jsonify(presets)
 
 
-def run_server(host="127.0.0.1", port=5000, debug=False, open_browser=True):
+def run_server(host: str = "127.0.0.1", port: int = 5000, debug: bool = False, open_browser: bool = True) -> None:
     """Webサーバーを起動"""
     init_plugins()
 
     if open_browser:
         # ブラウザを開く
-        def open_browser_delayed():
+        def open_browser_delayed() -> None:
             import time
 
             time.sleep(1.5)  # サーバー起動を待つ

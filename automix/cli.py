@@ -3,6 +3,7 @@ CLIインターフェース
 """
 import sys
 from pathlib import Path
+from typing import Any
 
 import click
 import numpy as np
@@ -333,13 +334,13 @@ def generate_video(
     progress.update(task, advance=1)
 
 
-def parse_config(config_path: Path) -> dict:
+def parse_config(config_path: Path) -> dict[Any, Any]:
     """設定ファイルを解析"""
     with open(config_path) as f:
         return yaml.safe_load(f)
 
 
-def get_preset_settings(preset: str) -> dict:
+def get_preset_settings(preset: str) -> dict[str, Any]:
     """プリセット設定を取得"""
     presets = {
         "pop": {"vocal_volume": 2.0, "bgm_volume": -1.0, "reverb": "room", "eq_preset": "bright"},
@@ -350,7 +351,7 @@ def get_preset_settings(preset: str) -> dict:
     return presets.get(preset, {})
 
 
-def display_analysis_results(vocal_analysis: dict, bgm_analysis: dict) -> None:
+def display_analysis_results(vocal_analysis: dict[str, Any], bgm_analysis: dict[str, Any]) -> None:
     """解析結果を表示"""
     table = Table(title="Audio Analysis Results")
     table.add_column("Parameter", style="cyan")

@@ -3,6 +3,7 @@
 """
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
@@ -271,7 +272,7 @@ class LyricsRenderer:
         self.text_overlay = TextOverlay(width, height, font_size, font_color)
 
         # SRTファイルを解析
-        self.subtitles = []
+        self.subtitles: list[dict[str, Any]] = []
         if srt_file:
             self.load_srt(srt_file)
 

@@ -150,7 +150,14 @@ module = [
     "pedalboard",
     "pyloudnorm",
     "moviepy",
+    "moviepy.*",
     "cv2",
+    "scipy",
+    "scipy.*",
+    "flask",
+    "flask_cors",
+    "werkzeug.*",
+    "yaml",
 ]
 ignore_missing_imports = true
 

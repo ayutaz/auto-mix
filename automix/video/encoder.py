@@ -106,8 +106,8 @@ class VideoEncoder:
         output_path = Path(output_path)
 
         # 一時ディレクトリ
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_dir = Path(temp_dir)
+        with tempfile.TemporaryDirectory() as temp_dir_str:
+            temp_dir = Path(temp_dir_str)
 
             # フレームを一時ファイルに保存
             frames_pattern = str(temp_dir / "frame_%06d.png")
@@ -139,7 +139,7 @@ class VideoEncoder:
         output_path = Path(output_path)
 
         # ビデオクリップを作成
-        def make_frame(t):
+        def make_frame(t: float) -> NDArray[np.uint8]:
             """時刻tのフレームを返す"""
             frame_idx = int(t * self.settings.fps)
             if frame_idx >= len(frames):
