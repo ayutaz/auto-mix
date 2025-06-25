@@ -13,7 +13,7 @@ from numpy.typing import NDArray
 try:
     import cv2
 except ImportError:
-    cv2 = None  # type: ignore
+    cv2 = None
 
 try:
     import moviepy.editor as mpe

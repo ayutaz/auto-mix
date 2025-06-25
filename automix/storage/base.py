@@ -130,7 +130,7 @@ class S3Storage(StorageBackend):
         region_name: str = "us-east-1",
     ):
         try:
-            import boto3
+            import boto3  # type: ignore[import-not-found]
         except ImportError:
             raise ImportError("boto3 is required for S3 storage. Install with: pip install boto3")
 
