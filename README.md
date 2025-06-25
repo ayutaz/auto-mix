@@ -229,6 +229,29 @@ automix-web --no-browser                  # ブラウザを自動で開かない
 - ⚡ リアルタイムプログレス表示
 - 🔌 プラグイン管理機能
 
+## デプロイ
+
+### 🚀 Render.com へのデプロイ（推奨・無料）
+
+最も簡単にデプロイできる方法です。詳細な手順は [`deploy/render/setup.md`](deploy/render/setup.md) を参照してください。
+
+**簡単な手順:**
+1. GitHubにコードをプッシュ
+2. [Render.com](https://render.com) でアカウント作成
+3. GitHubリポジトリを接続
+4. 自動デプロイ開始
+
+**制限事項:**
+- 15分間アクセスがないと自動スリープ
+- ファイルは再起動で消える（ダウンロードを推奨）
+
+### その他のデプロイオプション
+
+- **Google Cloud Run**: より高性能、無料枠が大きい → [`deploy/google-cloud-run/`](deploy/google-cloud-run/)
+- **Docker**: ローカルまたは任意のクラウドで実行 → `docker-compose up`
+
+詳細は [`deploy/`](deploy/) ディレクトリを参照してください。
+
 ## トラブルシューティング
 
 ### FFmpegが見つからない

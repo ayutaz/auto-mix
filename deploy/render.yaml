@@ -1,0 +1,18 @@
+# Render deployment configuration
+services:
+  - type: web
+    name: automix
+    runtime: docker
+    region: oregon
+    plan: standard
+    healthCheckPath: /health
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: PORT
+        value: 5000
+    scaling:
+      minInstances: 1
+      maxInstances: 3
+      targetMemoryPercent: 80
+      targetCPUPercent: 80

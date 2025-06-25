@@ -67,6 +67,12 @@ def index() -> Any:
         return "Static folder not configured", 500
 
 
+@app.route("/health")
+def health_check() -> Any:
+    """ヘルスチェック用エンドポイント"""
+    return jsonify({"status": "healthy", "service": "automix"})
+
+
 @app.route("/api/status")
 def get_status() -> Any:
     """処理状態を取得"""
@@ -261,4 +267,11 @@ def run_server(
 
 
 if __name__ == "__main__":
-    run_server()
+    import os
+    
+    # 環境変数から設定を読み込む
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", "5000"))
+    debug = os.getenv("FLASK_ENV") == "development"
+    
+    run_server(host=host, port=port, debug=debug, open_browser=False)

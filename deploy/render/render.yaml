@@ -1,0 +1,26 @@
+# Render.com deployment configuration
+services:
+  - type: web
+    name: automix
+    runtime: docker
+    repo: https://github.com/YOUR_USERNAME/auto-mix # Replace with your repo
+    branch: main
+    region: oregon # oregon, ohio, singapore, or frankfurt
+    plan: free # free tier
+    
+    # Build configuration
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    
+    # Environment variables
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      
+    # Health check
+    healthCheckPath: /health
+    
+    # Auto-deploy on push
+    autoDeploy: true
