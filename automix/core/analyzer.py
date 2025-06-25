@@ -1,6 +1,7 @@
 """
 音声解析モジュール
 """
+
 from dataclasses import dataclass
 from typing import Any
 

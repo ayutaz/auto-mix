@@ -1,6 +1,7 @@
 """
 AutoMix Web アプリケーション
 """
+
 import threading
 import webbrowser
 from pathlib import Path

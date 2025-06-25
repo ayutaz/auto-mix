@@ -1,6 +1,7 @@
 """
 動画生成機能のテスト
 """
+
 import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -448,8 +449,9 @@ class TestVideoEncoderEdgeCases:
         with patch("automix.video.encoder.subprocess.run") as mock_run:
             mock_run.side_effect = FileNotFoundError()
 
-            with tempfile.TemporaryDirectory() as tmpdir, pytest.raises(
-                RuntimeError, match="FFmpeg not found"
+            with (
+                tempfile.TemporaryDirectory() as tmpdir,
+                pytest.raises(RuntimeError, match="FFmpeg not found"),
             ):
                 encoder._create_video(
                     "frame_%06d.png", Path(tmpdir) / "audio.wav", Path(tmpdir) / "output.mp4", False
@@ -464,8 +466,9 @@ class TestVideoEncoderEdgeCases:
         with patch("automix.video.encoder.subprocess.run") as mock_run:
             mock_run.side_effect = subprocess.CalledProcessError(1, "ffmpeg")
 
-            with tempfile.TemporaryDirectory() as tmpdir, pytest.raises(
-                RuntimeError, match="FFmpeg encoding failed"
+            with (
+                tempfile.TemporaryDirectory() as tmpdir,
+                pytest.raises(RuntimeError, match="FFmpeg encoding failed"),
             ):
                 encoder._create_video(
                     "frame_%06d.png", Path(tmpdir) / "audio.wav", Path(tmpdir) / "output.mp4", False

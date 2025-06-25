@@ -1,6 +1,7 @@
 """
 CLIインターフェースのテスト
 """
+
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
@@ -474,11 +475,13 @@ class TestProcessAudio:
     @pytest.fixture
     def mock_dependencies(self):
         """依存関係のモック"""
-        with patch("automix.cli.AudioLoader") as mock_loader, patch(
-            "automix.cli.AudioAnalyzer"
-        ) as mock_analyzer, patch("automix.cli.MixProcessor") as mock_processor, patch(
-            "automix.cli.ReverbProcessor"
-        ) as mock_reverb, patch("automix.cli.MasteringProcessor") as mock_mastering:
+        with (
+            patch("automix.cli.AudioLoader") as mock_loader,
+            patch("automix.cli.AudioAnalyzer") as mock_analyzer,
+            patch("automix.cli.MixProcessor") as mock_processor,
+            patch("automix.cli.ReverbProcessor") as mock_reverb,
+            patch("automix.cli.MasteringProcessor") as mock_mastering,
+        ):
             # モックの戻り値を設定
             mock_audio = type(
                 "MockAudio",
@@ -571,9 +574,10 @@ class TestProcessAudio:
 
             settings = {"audio_only": False}
 
-            with patch("automix.cli.Progress") as mock_progress, patch(
-                "automix.cli.generate_video"
-            ) as mock_generate:
+            with (
+                patch("automix.cli.Progress") as mock_progress,
+                patch("automix.cli.generate_video") as mock_generate,
+            ):
                 process_audio(
                     vocal_path, bgm_path, output_path, settings, mock_progress.return_value, False
                 )
@@ -616,11 +620,12 @@ class TestGenerateVideo:
 
     def test_generate_video_basic(self):
         """基本的なビデオ生成のテスト"""
-        with patch("automix.cli.VideoSettings") as mock_settings, patch(
-            "automix.cli.VisualizerComposite"
-        ) as mock_visualizer, patch("automix.cli.VideoEncoder") as mock_encoder, patch(
-            "automix.cli.Progress"
-        ) as mock_progress:
+        with (
+            patch("automix.cli.VideoSettings") as mock_settings,
+            patch("automix.cli.VisualizerComposite") as mock_visualizer,
+            patch("automix.cli.VideoEncoder") as mock_encoder,
+            patch("automix.cli.Progress") as mock_progress,
+        ):
             # モックの設定
             mock_settings.return_value.fps = 30
             mock_visualizer.return_value.render_composite_frame.return_value = np.zeros(
@@ -641,11 +646,12 @@ class TestGenerateVideo:
 
     def test_generate_video_with_settings(self):
         """設定付きビデオ生成のテスト"""
-        with patch("automix.cli.VideoSettings") as mock_settings, patch(
-            "automix.cli.VisualizerComposite"
-        ) as mock_visualizer, patch("automix.cli.VideoEncoder") as mock_encoder, patch(
-            "automix.cli.Progress"
-        ) as mock_progress:
+        with (
+            patch("automix.cli.VideoSettings") as mock_settings,
+            patch("automix.cli.VisualizerComposite") as mock_visualizer,
+            patch("automix.cli.VideoEncoder") as mock_encoder,
+            patch("automix.cli.Progress") as mock_progress,
+        ):
             mock_settings.return_value.fps = 60
             mock_settings.return_value.width = 3840
             mock_settings.return_value.height = 2160

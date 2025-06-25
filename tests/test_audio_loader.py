@@ -1,6 +1,7 @@
 """
 音声ファイル読み込み機能のテスト
 """
+
 import tempfile
 from pathlib import Path
 from unittest.mock import patch

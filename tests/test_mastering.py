@@ -1,6 +1,7 @@
 """
 マスタリング機能のテスト
 """
+
 from unittest.mock import patch
 
 import numpy as np

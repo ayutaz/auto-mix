@@ -1,6 +1,7 @@
 """
 Web interface CLI command
 """
+
 import click
 
 from .app import run_server

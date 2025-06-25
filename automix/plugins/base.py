@@ -1,6 +1,7 @@
 """
 プラグインベースクラスと管理システム
 """
+
 import importlib
 import inspect
 from abc import ABC, abstractmethod

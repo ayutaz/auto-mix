@@ -1,6 +1,7 @@
 """
 音声ビジュアライザーモジュール
 """
+
 from dataclasses import dataclass
 from typing import Any
 

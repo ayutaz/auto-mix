@@ -1,6 +1,7 @@
 """
 音声ファイル読み込みモジュール
 """
+
 from dataclasses import dataclass
 from pathlib import Path
 
