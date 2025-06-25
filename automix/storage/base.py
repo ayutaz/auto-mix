@@ -15,11 +15,11 @@ class StorageBackend(ABC):
     def save(self, file_path: Path, file_object: BinaryIO) -> str:
         """
         Save a file to storage
-        
+
         Args:
             file_path: Path where file should be saved
             file_object: File-like object to save
-            
+
         Returns:
             URL or path to the saved file
         """
@@ -29,10 +29,10 @@ class StorageBackend(ABC):
     def load(self, file_path: str) -> BinaryIO:
         """
         Load a file from storage
-        
+
         Args:
             file_path: Path to the file
-            
+
         Returns:
             File-like object
         """
@@ -42,10 +42,10 @@ class StorageBackend(ABC):
     def delete(self, file_path: str) -> bool:
         """
         Delete a file from storage
-        
+
         Args:
             file_path: Path to the file
-            
+
         Returns:
             True if successful
         """
@@ -55,10 +55,10 @@ class StorageBackend(ABC):
     def exists(self, file_path: str) -> bool:
         """
         Check if a file exists
-        
+
         Args:
             file_path: Path to the file
-            
+
         Returns:
             True if file exists
         """
@@ -68,10 +68,10 @@ class StorageBackend(ABC):
     def get_url(self, file_path: str) -> str:
         """
         Get a URL for the file
-        
+
         Args:
             file_path: Path to the file
-            
+
         Returns:
             URL to access the file
         """
@@ -89,16 +89,16 @@ class LocalStorage(StorageBackend):
         """Save file to local filesystem"""
         full_path = self.base_path / file_path
         full_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         with open(full_path, "wb") as f:
             f.write(file_object.read())
-        
+
         return str(full_path)
 
     def load(self, file_path: str) -> BinaryIO:
         """Load file from local filesystem"""
         full_path = self.base_path / file_path
-        return open(full_path, "rb")
+        return open(full_path, "rb")  # noqa: SIM115
 
     def delete(self, file_path: str) -> bool:
         """Delete file from local filesystem"""
@@ -133,14 +133,14 @@ class S3Storage(StorageBackend):
             import boto3
         except ImportError:
             raise ImportError("boto3 is required for S3 storage. Install with: pip install boto3")
-        
+
         self.bucket_name = bucket_name
-        
+
         # Use environment variables if not provided
         aws_access_key_id = aws_access_key_id or os.getenv("AWS_ACCESS_KEY_ID")
         aws_secret_access_key = aws_secret_access_key or os.getenv("AWS_SECRET_ACCESS_KEY")
         endpoint_url = endpoint_url or os.getenv("S3_ENDPOINT_URL")
-        
+
         self.s3_client = boto3.client(
             "s3",
             aws_access_key_id=aws_access_key_id,
@@ -158,7 +158,7 @@ class S3Storage(StorageBackend):
     def load(self, file_path: str) -> BinaryIO:
         """Load file from S3"""
         import io
-        
+
         file_object = io.BytesIO()
         self.s3_client.download_fileobj(self.bucket_name, file_path, file_object)
         file_object.seek(0)
@@ -177,7 +177,7 @@ class S3Storage(StorageBackend):
         try:
             self.s3_client.head_object(Bucket=self.bucket_name, Key=file_path)
             return True
-        except:
+        except Exception:
             return False
 
     def get_url(self, file_path: str) -> str:
@@ -199,6 +199,7 @@ def get_storage_backend() -> StorageBackend:
             bucket_name=os.getenv("S3_BUCKET_NAME", ""),
             endpoint_url=os.getenv("S3_ENDPOINT_URL"),
         )
-    
+
     # Default to local storage
     return LocalStorage()
+

@@ -268,10 +268,10 @@ def run_server(
 
 if __name__ == "__main__":
     import os
-    
+
     # 環境変数から設定を読み込む
-    host = os.getenv("HOST", "0.0.0.0")
+    host = os.getenv("HOST", "0.0.0.0")  # nosec B104 - Binding to all interfaces is required for cloud deployment
     port = int(os.getenv("PORT", "5000"))
     debug = os.getenv("FLASK_ENV") == "development"
-    
+
     run_server(host=host, port=port, debug=debug, open_browser=False)
