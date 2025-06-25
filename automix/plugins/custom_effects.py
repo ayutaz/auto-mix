@@ -120,16 +120,16 @@ class VocalEnhancerPlugin(AudioEffectPlugin):
 
         # ブライトネス (2-4kHz)
         if self.brightness > 0:
-            freq = 3000
-            q = 2
+            freq = 3000.0
+            q = 2.0
             gain_db = self.brightness * 6  # 最大6dB
             b, a = self._design_peaking_eq(freq, q, gain_db, sample_rate)
             result = signal.filtfilt(b, a, result)
 
         # プレゼンス (5-8kHz)
         if self.presence > 0:
-            freq = 6500
-            q = 2
+            freq = 6500.0
+            q = 2.0
             gain_db = self.presence * 4  # 最大4dB
             b, a = self._design_peaking_eq(freq, q, gain_db, sample_rate)
             result = signal.filtfilt(b, a, result)
