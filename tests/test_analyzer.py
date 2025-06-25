@@ -50,9 +50,11 @@ class TestAudioAnalyzer:
         assert pitch_analysis.median_pitch > 0
         # ピッチ検出はサブハーモニックを検出することがある
         # 440Hzまたはそのサブハーモニック(110Hz, 220Hz)を検出
-        assert (105 < pitch_analysis.median_pitch < 115) or (
-            215 < pitch_analysis.median_pitch < 225
-        ) or (430 < pitch_analysis.median_pitch < 450)
+        assert (
+            (105 < pitch_analysis.median_pitch < 115)
+            or (215 < pitch_analysis.median_pitch < 225)
+            or (430 < pitch_analysis.median_pitch < 450)
+        )
 
     def test_volume_analysis(self, sample_audio):
         """音量解析のテスト"""

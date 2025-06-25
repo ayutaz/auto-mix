@@ -227,7 +227,9 @@ def get_presets() -> Any:
     return jsonify(presets)
 
 
-def run_server(host: str = "127.0.0.1", port: int = 5000, debug: bool = False, open_browser: bool = True) -> None:
+def run_server(
+    host: str = "127.0.0.1", port: int = 5000, debug: bool = False, open_browser: bool = True
+) -> None:
     """Webサーバーを起動"""
     init_plugins()
 

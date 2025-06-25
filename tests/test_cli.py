@@ -111,7 +111,7 @@ class TestCLI:
             # settings引数内にaudio_onlyが含まれる
             assert mock_process.called
             args, kwargs = call_args
-            settings = args[3] if len(args) > 3 else kwargs.get('settings', {})
+            settings = args[3] if len(args) > 3 else kwargs.get("settings", {})
             assert settings.get("audio_only") is True
 
     def test_preset_selection(self, runner, sample_audio_files):
@@ -142,7 +142,7 @@ class TestCLI:
                 # プリセットが渡されていることを確認
                 call_args = mock_process.call_args
                 args, kwargs = call_args
-                settings = args[3] if len(args) > 3 else kwargs.get('settings', {})
+                settings = args[3] if len(args) > 3 else kwargs.get("settings", {})
                 # プリセットによって適切な設定が適用されているか確認
                 if preset == "pop":
                     assert settings.get("vocal_volume") == 2.0
@@ -242,7 +242,7 @@ video:
             # パラメータが正しく渡されていることを確認
             call_args = mock_process.call_args
             args, kwargs = call_args
-            settings = args[3] if len(args) > 3 else kwargs.get('settings', {})
+            settings = args[3] if len(args) > 3 else kwargs.get("settings", {})
             assert settings.get("vocal_volume") == 3
             assert settings.get("bgm_volume") == -2
             assert settings.get("reverb") == "room"
@@ -284,7 +284,7 @@ Test lyrics line 1
                 # 歌詞ファイルが渡されていることを確認
                 call_args = mock_process.call_args
                 args, kwargs = call_args
-                settings = args[3] if len(args) > 3 else kwargs.get('settings', {})
+                settings = args[3] if len(args) > 3 else kwargs.get("settings", {})
                 assert settings.get("lyrics") == str(lyrics_path)
         finally:
             lyrics_path.unlink()
@@ -316,7 +316,7 @@ Test lyrics line 1
 
                 call_args = mock_process.call_args
                 args, kwargs = call_args
-                settings = args[3] if len(args) > 3 else kwargs.get('settings', {})
+                settings = args[3] if len(args) > 3 else kwargs.get("settings", {})
                 assert settings.get("video_template") == template
 
     @pytest.mark.skip(reason="Batch processing not implemented")
@@ -600,7 +600,7 @@ class TestProcessAudio:
                 patch("automix.cli.sf.info") as mock_sf_info,
             ):
                 # Mock soundfile info to avoid file read error
-                mock_sf_info.return_value = type('', (), {'duration': 1.0})
+                mock_sf_info.return_value = type("", (), {"duration": 1.0})
 
                 process_audio(
                     vocal_path, bgm_path, output_path, settings, mock_progress.return_value, True
