@@ -99,11 +99,8 @@ class PluginManager:
     def __init__(self, plugin_dirs: list[Path] | None = None):
         self.plugins: dict[str, PluginInterface] = {}
         self.plugin_dirs = plugin_dirs or []
-        self._plugin_types: dict[str, type[PluginInterface]] = {
-            "audio_effect": AudioEffectPlugin,
-            "visualizer": VisualizerPlugin,
-            "analyzer": AnalyzerPlugin,
-        }
+        # 具象クラスのみを登録
+        self._plugin_types: dict[str, type[PluginInterface]] = {}
 
     def register_plugin(self, plugin: PluginInterface) -> None:
         """プラグインを登録"""
