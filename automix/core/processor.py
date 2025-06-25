@@ -143,7 +143,7 @@ class VolumeProcessor:
 
         if current_rms > 0:
             gain = target_rms / current_rms
-            return audio * gain
+            return (audio * gain).astype(np.float32)
 
         return audio
 
@@ -188,7 +188,8 @@ class EQProcessor:
         sos = scipy.signal.butter(
             order, cutoff, btype="highpass", fs=self.sample_rate, output="sos"
         )
-        return scipy.signal.sosfilt(sos, audio)
+        filtered = scipy.signal.sosfilt(sos, audio)
+        return filtered.astype(np.float32)
 
     def lowpass(
         self, audio: NDArray[np.float32], cutoff: float, order: int = 4
@@ -205,7 +206,8 @@ class EQProcessor:
             NDArray[np.float32]: フィルタ適用後の音声
         """
         sos = scipy.signal.butter(order, cutoff, btype="lowpass", fs=self.sample_rate, output="sos")
-        return scipy.signal.sosfilt(sos, audio)
+        filtered = scipy.signal.sosfilt(sos, audio)
+        return filtered.astype(np.float32)
 
     def parametric_eq(
         self, audio: NDArray[np.float32], freq: float, gain_db: float, q: float = 1.0
@@ -240,7 +242,8 @@ class EQProcessor:
         b = np.array([b0, b1, b2]) / a0
         a = np.array([a0, a1, a2]) / a0
 
-        return scipy.signal.lfilter(b, a, audio)
+        filtered = scipy.signal.lfilter(b, a, audio)
+        return filtered.astype(np.float32)
 
 
 class CompressorProcessor:
@@ -375,10 +378,10 @@ class AlignmentProcessor:
 
         # アライメント
         if offset > 0:
-            audio2_aligned = np.pad(audio2, (offset, 0), mode="constant")[: len(audio1)]
+            audio2_aligned = np.pad(audio2, (int(offset), 0), mode="constant")[: len(audio1)]
             audio1_aligned = audio1
         else:
-            audio1_aligned = np.pad(audio1, (-offset, 0), mode="constant")[: len(audio2)]
+            audio1_aligned = np.pad(audio1, (int(-offset), 0), mode="constant")[: len(audio2)]
             audio2_aligned = audio2
 
         # 長さを合わせる

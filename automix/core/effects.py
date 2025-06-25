@@ -73,7 +73,8 @@ class ReverbProcessor:
             return audio
 
         delayed = np.pad(audio, (delay_samples, 0))[: len(audio)]
-        return -audio + delayed + audio * 0.5
+        result = -audio + delayed + audio * 0.5
+        return result.astype(np.float32)
 
     @classmethod
     def from_preset(cls, preset: str, sample_rate: int = 44100) -> "ReverbProcessor":
@@ -140,7 +141,7 @@ class DelayProcessor:
         """
         # ディレイバッファの初期化
         if self.delay_buffer is None or len(self.delay_buffer) != self.delay_samples:
-            self.delay_buffer = np.zeros(self.delay_samples)
+            self.delay_buffer = np.zeros(self.delay_samples).astype(np.float32)
 
         output = np.zeros_like(audio)
 
@@ -388,7 +389,8 @@ class DeesserProcessor:
         # 低周波成分と合成
         low_freq = audio - high_freq
 
-        return low_freq + processed_high
+        result = low_freq + processed_high
+        return result.astype(np.float32)
 
 
 class StereoProcessor:

@@ -125,7 +125,7 @@ class LimiterProcessor:
         """
         # ディレイバッファの初期化
         if self.delay_buffer is None:
-            self.delay_buffer = np.zeros(max(1, self.lookahead_samples))
+            self.delay_buffer = np.zeros(max(1, self.lookahead_samples)).astype(np.float32)
 
         output = np.zeros_like(audio)
         envelope = 0.0
@@ -153,7 +153,7 @@ class LimiterProcessor:
                 gain = 1.0
 
             # ディレイバッファから出力
-            if self.lookahead_samples > 0:
+            if self.lookahead_samples > 0 and self.delay_buffer is not None:
                 output[i] = self.delay_buffer[0] * gain
                 # ディレイバッファ更新
                 self.delay_buffer = np.roll(self.delay_buffer, -1)
@@ -222,7 +222,7 @@ class MultibandCompressor:
             compressed_bands.append(compressed)
 
         # 帯域を合成
-        return np.sum(compressed_bands, axis=0)
+        return np.sum(compressed_bands, axis=0).astype(np.float32)
 
     def _split_bands(self, audio: NDArray[np.float32]) -> list[NDArray[np.float32]]:
         """周波数帯域に分割"""
@@ -568,7 +568,7 @@ class FinalEQ:
         if preset not in presets:
             raise ValueError(f"Unknown preset: {preset}")
 
-        self.bands = presets[preset]
+        self.bands = [dict(band) for band in presets[preset]]  # Create copies to avoid mutation
 
     @classmethod
     def from_preset(cls, preset: str, sample_rate: int = 44100) -> "FinalEQ":

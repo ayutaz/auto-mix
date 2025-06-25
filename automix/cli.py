@@ -84,7 +84,7 @@ def main(
     preview_mode: bool,
     plugin_dir: str | None,
     list_plugins: bool,
-):
+) -> None:
     """Auto mixing and video generation for vocal covers"""
 
     if version:
@@ -346,7 +346,8 @@ def generate_video(
 def parse_config(config_path: Path) -> dict[Any, Any]:
     """設定ファイルを解析"""
     with open(config_path) as f:
-        return yaml.safe_load(f)
+        config = yaml.safe_load(f)
+        return config if config is not None else {}
 
 
 def get_preset_settings(preset: str) -> dict[str, Any]:

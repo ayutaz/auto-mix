@@ -125,8 +125,8 @@ class WaveformVisualizer:
             y = int(mid_y - audio[i] * height * 0.4)
             points.append([i * self.width // len(audio), y])
 
-        points = np.array(points, np.int32)
-        cv2.polylines(frame, [points], False, self.color, 2)
+        points_array = np.array(points, np.int32)
+        cv2.polylines(frame, [points_array], False, self.color, 2)
 
     def _draw_filled_waveform(
         self, frame: NDArray[np.uint8], audio: NDArray[np.float32], mid_y: int, height: int
@@ -152,11 +152,11 @@ class WaveformVisualizer:
             points_top.append([x, mid_y - abs(y_offset)])
             points_bottom.append([x, mid_y + abs(y_offset)])
 
-        points_top = np.array(points_top, np.int32)
-        points_bottom = np.array(points_bottom, np.int32)
+        points_top_array = np.array(points_top, np.int32)
+        points_bottom_array = np.array(points_bottom, np.int32)
 
-        cv2.polylines(frame, [points_top], False, self.color, 2)
-        cv2.polylines(frame, [points_bottom], False, self.color, 2)
+        cv2.polylines(frame, [points_top_array], False, self.color, 2)
+        cv2.polylines(frame, [points_bottom_array], False, self.color, 2)
 
     def _draw_circular_waveform(
         self, frame: NDArray[np.uint8], audio: NDArray[np.float32], mid_y: int, height: int
@@ -174,8 +174,8 @@ class WaveformVisualizer:
             y = int(center_y + r * np.sin(angle))
             points_list.append([x, y])
 
-        points = np.array(points_list, np.int32)
-        cv2.polylines(frame, [points], True, self.color, 2)
+        points_array = np.array(points_list, np.int32)
+        cv2.polylines(frame, [points_array], True, self.color, 2)
 
 
 class SpectrumVisualizer:
@@ -245,8 +245,8 @@ class SpectrumVisualizer:
         # スムージング
         spectrum = (
             self.smoothing_factor * self.prev_spectrum + (1 - self.smoothing_factor) * spectrum
-        ).astype(np.float32)
-        self.prev_spectrum = spectrum
+        )
+        self.prev_spectrum = spectrum.astype(np.float64)
 
         # 描画
         frame = np.zeros((self.height, self.width, 3), dtype=np.uint8)
@@ -289,7 +289,7 @@ class SpectrumVisualizer:
         bars_normalized = (bars_db + 60) / 60  # -60dB to 0dB
         bars_normalized = np.clip(bars_normalized, 0, 1)
 
-        return bars_normalized
+        return bars_normalized.astype(np.float32)
 
     def _draw_bars(self, frame: NDArray[np.uint8], spectrum: NDArray[np.float32]) -> None:
         """バーを描画"""
@@ -530,4 +530,4 @@ class VisualizerComposite:
         # クリッピング
         composite = np.clip(composite, 0, 255).astype(np.uint8)
 
-        return composite
+        return composite.astype(np.uint8)

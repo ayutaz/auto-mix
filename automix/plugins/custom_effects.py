@@ -13,7 +13,7 @@ from .base import AudioEffectPlugin
 class VintageWarmthPlugin(AudioEffectPlugin):
     """ビンテージウォームスプラグイン - アナログ機器の温かみを追加"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("vintage_warmth", "1.0.0")
         self.warmth = 0.5
         self.saturation = 0.3
@@ -66,13 +66,14 @@ class VintageWarmthPlugin(AudioEffectPlugin):
             filtered = saturated
 
         # 原音とブレンド
-        return audio * (1 - self.warmth * 0.5) + filtered * (self.warmth * 0.5 + 0.5)
+        result = audio * (1 - self.warmth * 0.5) + filtered * (self.warmth * 0.5 + 0.5)
+        return result.astype(np.float32)
 
 
 class VocalEnhancerPlugin(AudioEffectPlugin):
     """ボーカルエンハンサープラグイン - ボーカルの存在感を強調"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("vocal_enhancer", "1.0.0")
         self.brightness = 0.5
         self.presence = 0.5
@@ -177,7 +178,7 @@ class VocalEnhancerPlugin(AudioEffectPlugin):
 class StereoEnhancerPlugin(AudioEffectPlugin):
     """ステレオエンハンサープラグイン - ステレオイメージを拡張"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("stereo_enhancer", "1.0.0")
         self.width = 0.5
         self.bass_mono = True
@@ -278,7 +279,7 @@ class StereoEnhancerPlugin(AudioEffectPlugin):
 class HarmonicExciterPlugin(AudioEffectPlugin):
     """ハーモニックエキサイタープラグイン - 倍音を追加して音に輝きを与える"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("harmonic_exciter", "1.0.0")
         self.amount = 0.3
         self.frequency = 3000.0

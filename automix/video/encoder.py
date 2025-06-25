@@ -332,7 +332,7 @@ class StreamingEncoder:
 
     def stop_encoding(self) -> None:
         """エンコードを停止"""
-        if self.process:
+        if self.process and self.process.stdin:
             self.process.stdin.close()
             self.process.wait()
             self.process = None

@@ -243,7 +243,8 @@ class CacheManager:
         """キャッシュからデータを読み込む"""
         cache_path = self.get_cache_path(key)
         if cache_path.exists():
-            return np.load(cache_path)
+            data = np.load(cache_path)
+            return data.astype(np.float32)
         return None
 
     def clear(self) -> None:

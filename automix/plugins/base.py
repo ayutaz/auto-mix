@@ -144,8 +144,12 @@ class PluginManager:
                     and obj not in self._plugin_types.values()
                 ):
                     # プラグインインスタンスを作成して登録
-                    plugin = obj()
-                    self.register_plugin(plugin)
+                    try:
+                        plugin = obj()
+                        self.register_plugin(plugin)
+                    except TypeError:
+                        # 抽象クラスの場合はスキップ
+                        pass
 
     def load_plugins_from_directory(self, directory: Path) -> None:
         """ディレクトリからプラグインを読み込む"""
@@ -176,7 +180,7 @@ class PluginManager:
 class PitchShiftPlugin(AudioEffectPlugin):
     """ピッチシフトプラグイン"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("pitch_shift", "1.0.0")
         self.semitones = 0.0
 
@@ -214,7 +218,7 @@ class PitchShiftPlugin(AudioEffectPlugin):
 class NoiseGatePlugin(AudioEffectPlugin):
     """ノイズゲートプラグイン"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("noise_gate", "1.0.0")
         self.threshold_db = -40.0
         self.attack_ms = 1.0
@@ -277,7 +281,7 @@ class NoiseGatePlugin(AudioEffectPlugin):
 class SpectrumVisualizerPlugin(VisualizerPlugin):
     """スペクトラムビジュアライザープラグイン"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("spectrum_visualizer", "1.0.0")
         self.style = "bars"
         self.color_scheme = "rainbow"

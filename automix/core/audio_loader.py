@@ -26,7 +26,7 @@ class AudioFile:
     channels: int
     file_path: Path | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """初期化後の処理"""
         if self.data.ndim == 1:
             self.channels = 1
